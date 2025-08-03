@@ -1,15 +1,15 @@
 import webbrowser
+from pathlib import Path
 
 import folium
 import pandas as pd
 from node_schema import NodeInputModel
-from pathlib import Path
 
 
-def show_map(map: folium.Map) -> None:
+def show_map(tsp_map: folium.Map) -> None:
     """Show the map in a browser window."""
     filename = "map.html"
-    map.save(filename)
+    tsp_map.save(filename)
     webbrowser.open(filename, new=2)
 
 

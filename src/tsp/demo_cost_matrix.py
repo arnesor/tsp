@@ -1,5 +1,4 @@
-"""
-Demonstration of the cost matrix calculation system integrated with TSP solving.
+"""Demonstration of the cost matrix calculation system integrated with TSP solving.
 
 This script shows how to use the new cost matrix calculation classes with
 different coordinate systems and distance calculation methods.
@@ -7,7 +6,7 @@ different coordinate systems and distance calculation methods.
 
 import pandas as pd
 import pyomo.environ as pyo
-from cost_matrix import calculate_cost_matrix, CostMatrixFactory
+from cost_matrix import CostMatrixFactory, calculate_cost_matrix
 from node_schema import NodeInputModel
 
 
@@ -38,8 +37,7 @@ def create_sample_latlon_data():
 
 
 def solve_tsp_with_cost_matrix(df, cost_matrix):
-    """
-    Solve TSP using the provided cost matrix.
+    """Solve TSP using the provided cost matrix.
 
     Args:
         df: DataFrame with node data

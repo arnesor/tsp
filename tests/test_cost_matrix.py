@@ -1,9 +1,9 @@
 import pandas as pd
 
 from tsp.cost_matrix import (
+    CostMatrixFactory,
     EuclideanCalculator,
     GeodesicCalculator,
-    CostMatrixFactory,
     calculate_cost_matrix,
 )
 

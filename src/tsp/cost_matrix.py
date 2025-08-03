@@ -1,5 +1,4 @@
-"""
-Cost matrix calculation module for TSP optimization.
+"""Cost matrix calculation module for TSP optimization.
 
 This module provides classes and functions to calculate cost matrices for route optimization
 problems. It supports different coordinate systems (lat/lon and x/y) and various distance
@@ -21,8 +20,7 @@ class CostCalculator(ABC):
 
     @abstractmethod
     def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Calculate the cost matrix for the given DataFrame.
+        """Calculate the cost matrix for the given DataFrame.
 
         Args:
             df: DataFrame with coordinate columns and node identifiers
@@ -34,8 +32,7 @@ class CostCalculator(ABC):
 
     @abstractmethod
     def supports_coordinates(self, df: pd.DataFrame) -> bool:
-        """
-        Check if this calculator supports the coordinate system in the DataFrame.
+        """Check if this calculator supports the coordinate system in the DataFrame.
 
         Args:
             df: DataFrame to check
@@ -143,9 +140,8 @@ class OpenRouteServiceCalculator(CostCalculator):
 
     def __init__(
         self, api_key: str, profile: str = "foot-walking", metric: str = "distance"
-    ):
-        """
-        Initialize OpenRouteService calculator.
+    ) -> None:
+        """Initialize OpenRouteService calculator.
 
         Args:
             api_key: OpenRouteService API key
@@ -181,8 +177,7 @@ class CostMatrixFactory:
     def create_calculator(
         df: pd.DataFrame, method: str | None = None
     ) -> CostCalculator:
-        """
-        Create an appropriate cost calculator based on DataFrame and method.
+        """Create an appropriate cost calculator based on DataFrame and method.
 
         Args:
             df: DataFrame with coordinate data
@@ -220,10 +215,9 @@ class CostMatrixFactory:
 
 
 def calculate_cost_matrix(
-    df: pd.DataFrame, method: str | None = None, **kwargs
+    df: pd.DataFrame, method: str | None = None, **kwargs  # noqa: ANN003
 ) -> pd.DataFrame:
-    """
-    Convenience function to calculate cost matrix.
+    """Convenience function to calculate cost matrix.
 
     Args:
         df: DataFrame with coordinate data

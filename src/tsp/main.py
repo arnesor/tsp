@@ -31,24 +31,24 @@ m_tsp = pyo.ConcreteModel("TSP")
 
 list_of_sites = df_distances.index.tolist()
 m_tsp.sites = pyo.Set(
-    initialize=list_of_sites, domain=pyo.Any, doc="set of all sites to be visited (𝕊)"
+    initialize=list_of_sites, domain=pyo.Any, doc="set of all sites to be visited (S)"
 )
 m_tsp.sites_except_hotel = pyo.Set(
     initialize=m_tsp.sites - {"hotel"},
     domain=m_tsp.sites,
-    doc="Sites of interest, i.e., all sites except the hotel (𝕊*)",
+    doc="Sites of interest, i.e., all sites except the hotel (S*)",
 )
 
 
 def valid_arc_filter(model: pyo.ConcreteModel, value: tuple[str, str]) -> bool:
-    """All possible arcs connecting the sites (𝔸)"""
+    """All possible arcs connecting the sites (A)."""
     # only create pair (i, j) if site i and site j are different
     i, j = value  # Unpack the value tuple
     return i != j
 
 
 m_tsp.valid_arcs = pyo.Set(
-    initialize=m_tsp.sites * m_tsp.sites,  # 𝕊 × 𝕊
+    initialize=m_tsp.sites * m_tsp.sites,  # S * S
     filter=valid_arc_filter,
     doc=valid_arc_filter.__doc__,
 )
@@ -58,7 +58,7 @@ m_tsp.valid_arcs = pyo.Set(
 
 
 def distance_between_sites(model: pyo.ConcreteModel, i: str, j: str) -> float:
-    """Distance between site i and site j (𝐷𝑖𝑗)"""
+    """Distance between site i and site j (Dij)."""
     return df_distances.at[i, j]  # fetch the distance from dataframe
 
 
@@ -83,9 +83,9 @@ m_tsp.x_ij = pyo.Var(
 )
 
 m_tsp.rank_i = pyo.Var(
-    m_tsp.sites_except_hotel,  # i ∈ 𝕊* (index)
-    within=pyo.NonNegativeReals,  # rᵢ ∈ ℝ₊ (domain)
-    bounds=(1, len(m_tsp.sites_except_hotel)),  # 1 ≤ rᵢ ≤ |𝕊*|
+    m_tsp.sites_except_hotel,  # i ∈ S* (index)
+    within=pyo.NonNegativeReals,  # rᵢ ∈ R₊ (domain)
+    bounds=(1, len(m_tsp.sites_except_hotel)),  # 1 ≤ rᵢ ≤ |S*|
     doc="Rank of each site to track visit order",
 )
 
@@ -93,7 +93,7 @@ m_tsp.rank_i = pyo.Var(
 
 
 def total_distance_traveled(model: pyo.ConcreteModel) -> float:
-    """total distance traveled"""
+    """Total distance traveled."""
     return pyo.summation(model.distance_ij, model.x_ij)
 
 
@@ -107,12 +107,12 @@ m_tsp.obj_total_distance = pyo.Objective(
 
 
 def site_is_entered_once(model: pyo.ConcreteModel, j: str) -> bool:
-    """each site j must be visited from exactly one other site"""
+    """Each site j must be visited from exactly one other site."""
     return sum(model.x_ij[i, j] for i in model.sites if i != j) == 1
 
 
 def site_is_exited_once(model: pyo.ConcreteModel, i: str) -> bool:
-    """each site i must departure to exactly one other site"""
+    """Each site i must departure to exactly one other site."""
     return sum(model.x_ij[i, j] for j in model.sites if j != i) == 1
 
 
@@ -125,10 +125,8 @@ m_tsp.constr_each_site_is_exited_once = pyo.Constraint(
 
 
 # Subtour elimination
-def path_is_single_tour(model: pyo.ConcreteModel, i: str, j: str):
-    """For each pair of non-hotel sites (i, j),
-    if site j is visited from site i, the rank of j must be
-    strictly greater than the rank of i."""
+def path_is_single_tour(model: pyo.ConcreteModel, i: str, j: str) -> bool:
+    """For each pair of non-startend sites (i, j), if site j is visited from site i, the rank of j must be strictly greater than the rank of i."""
     if i == j:  # if sites coincide, skip creating a constraint
         return pyo.Constraint.Skip
 
@@ -148,7 +146,8 @@ m_tsp.constr_path_is_single_tour = pyo.Constraint(
 m_tsp.pprint()
 
 
-def print_model_info(model: pyo.ConcreteModel):
+def print_model_info(model: pyo.ConcreteModel) -> None:
+    """Print model information."""
     print(
         f"Name: {model.name}",
         f"Num variables: {model.nvariables()}",
@@ -165,18 +164,14 @@ m_tsp.x_ij.pprint()
 
 
 def extract_solution_as_arcs(model: pyo.ConcreteModel) -> list[tuple[str, str]]:
-    """Extract a list of active (selected) arcs from the solved model
-    by keeping only the arcs whose binary variables are 1
-    """
+    """Extract a list of active (selected) arcs from the solved model."""
     return [
         (i, j) for i, j in model.valid_arcs if math.isclose(model.x_ij[i, j].value, 1.0)
     ]
 
 
 def plot_arcs_as_graph(tour_as_arcs: list[tuple[str, str]]) -> None:
-    """Take in a list of tuples representing arcs, convert it
-    to a networkx graph and draw it
-    """
+    """Take in a list of arcs, convert it to a networkx graph and draw it."""
     G = nx.DiGraph()
     G.add_edges_from(tour_as_arcs)  # store solution as graph
 
@@ -193,8 +188,8 @@ def plot_arcs_as_graph(tour_as_arcs: list[tuple[str, str]]) -> None:
     plt.show()
 
 
-def plot_solution_as_graph(model: pyo.ConcreteModel):
-    """Plot the solution of the given model as a graph"""
+def plot_solution_as_graph(model: pyo.ConcreteModel) -> None:
+    """Plot the solution of the given model as a graph."""
     print(f"Total distance: {model.obj_total_distance()}")
 
     active_arcs = extract_solution_as_arcs(model)
@@ -204,7 +199,8 @@ def plot_solution_as_graph(model: pyo.ConcreteModel):
 plot_solution_as_graph(m_tsp)
 
 
-def main():
+def main() -> None:
+    """Main function."""
     print("Hello from tsp!")
 
 
