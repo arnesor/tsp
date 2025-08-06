@@ -19,7 +19,7 @@ class CostCalculator(ABC):
     """Abstract base class for cost matrix calculators."""
 
     @abstractmethod
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculate the cost matrix for the given DataFrame.
 
         Args:
@@ -86,7 +86,7 @@ class EuclideanCalculator(CostCalculator):
 
         return df_with_utm
 
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculate Euclidean distance matrix for x/y coordinates."""
         if not self.supports_coordinates(df):
             raise ValueError(
@@ -113,7 +113,7 @@ class GeodesicCalculator(CostCalculator):
         """Check if DataFrame has lat and lon columns."""
         return self.has_latlon(df)
 
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculate geodesic distance matrix for lat/lon coordinates."""
         if not self.supports_coordinates(df):
             raise ValueError("DataFrame must have 'lat' and 'lon' columns")
@@ -157,7 +157,7 @@ class OpenRouteServiceCalculator(CostCalculator):
         """Check if DataFrame has lat and lon columns."""
         return "lat" in df.columns and "lon" in df.columns
 
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculate cost matrix using OpenRouteService API."""
         if not self.supports_coordinates(df):
             raise ValueError("DataFrame must have 'lat' and 'lon' columns")
@@ -214,9 +214,11 @@ class CostMatrixFactory:
             raise ValueError(f"Unknown method: {method}")
 
 
-def calculate_cost_matrix(
-    df: pd.DataFrame, method: str | None = None, **kwargs  # noqa: ANN003
-) -> pd.DataFrame[float]:
+def calculate_cost_matrix(  # type: ignore[no-untyped-def]
+    df: pd.DataFrame,
+    method: str | None = None,
+    **kwargs,  # noqa: ANN003
+) -> pd.DataFrame:
     """Convenience function to calculate cost matrix.
 
     Args:

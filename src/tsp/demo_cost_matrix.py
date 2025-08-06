@@ -6,8 +6,9 @@ different coordinate systems and distance calculation methods.
 
 import pandas as pd
 import pyomo.environ as pyo
-from cost_matrix import CostMatrixFactory, calculate_cost_matrix
-from node_schema import NodeInputModel
+
+from .cost_matrix import CostMatrixFactory, calculate_cost_matrix
+from .node_schema import NodeInputModel
 
 
 def create_sample_xy_data() -> pd.DataFrame:

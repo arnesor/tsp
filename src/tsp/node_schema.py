@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import cast
 
 import pandas as pd
 import pandera.pandas as pa
@@ -34,7 +35,7 @@ class NodeInputModel(pa.DataFrameModel):
         strict = False
 
     @pa.dataframe_check
-    def _coords_valid(cls, df: DataFrame[pa.DataFrameModel]) -> Series[bool]:
+    def _coords_valid(cls, df: DataFrame["NodeInputModel"]) -> Series[bool]:
         result = pd.Series([False] * len(df))
 
         # Check if both lon and lat columns exist and have valid values
@@ -75,4 +76,4 @@ class NodeInputModel(pa.DataFrameModel):
                 has_valid_x_y = df["x"].notna() & df["y"].notna()
                 result = result | has_valid_x_y
 
-        return result
+        return cast(Series[bool], result)

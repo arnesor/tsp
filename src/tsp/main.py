@@ -172,7 +172,7 @@ def extract_solution_as_arcs(model: pyo.ConcreteModel) -> list[tuple[str, str]]:
 
 def plot_arcs_as_graph(tour_as_arcs: list[tuple[str, str]]) -> None:
     """Take in a list of arcs, convert it to a networkx graph and draw it."""
-    G = nx.DiGraph()
+    G: nx.DiGraph = nx.DiGraph()
     G.add_edges_from(tour_as_arcs)  # store solution as graph
 
     node_colors = ["red" if node == "hotel" else "skyblue" for node in G.nodes()]
