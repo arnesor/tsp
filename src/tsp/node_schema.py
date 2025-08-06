@@ -6,6 +6,16 @@ from pandera.typing import DataFrame, Series
 
 
 class NodeType(StrEnum):
+    """Represents types of nodes or sites/controls.
+
+    Attributes:
+        PERMANENT (str): Represents a permanent node type that remains constant.
+        START (str): Represents a starting node type, indicating the beginning of a tour.
+        END (str): Represents an ending node type, indicating the end of a tour.
+        STARTEND (str): Represents a node type that serves as both the starting
+            and ending point of a tour.
+    """
+
     PERMANENT = "permanent"
     START = "start"
     END = "end"
@@ -13,11 +23,14 @@ class NodeType(StrEnum):
 
 
 class NodeInputModel(pa.DataFrameModel):
-    id: Series[int] = pa.Field(gt=0, unique=True)
-    name: Series[str] = pa.Field(str_length={"min_value": 1})
+    """Schema for validating nodes or sites/controls input data."""
+
+    name: Series[str] = pa.Field(str_length={"min_value": 1}, unique=True)
     node_type: Series[str] = pa.Field(isin=[n.value for n in NodeType])
 
     class Config:
+        """Allow extra columns in the input data."""
+
         strict = False
 
     @pa.dataframe_check
@@ -26,7 +39,6 @@ class NodeInputModel(pa.DataFrameModel):
 
         # Check if both lon and lat columns exist and have valid values
         if "lon" in df.columns and "lat" in df.columns:
-            # Validate that lon and lat are float type
             lon_is_float = pd.api.types.is_float_dtype(df["lon"])
             lat_is_float = pd.api.types.is_float_dtype(df["lat"])
 
@@ -49,12 +61,12 @@ class NodeInputModel(pa.DataFrameModel):
 
             # Check if non-null values are integers (or can be converted to integers)
             x_is_int = len(x_non_null) == 0 or all(
-                isinstance(val, (int, pd.Int64Dtype))
+                isinstance(val, int | pd.Int64Dtype)
                 or (isinstance(val, float) and val.is_integer())
                 for val in x_non_null
             )
             y_is_int = len(y_non_null) == 0 or all(
-                isinstance(val, (int, pd.Int64Dtype))
+                isinstance(val, int | pd.Int64Dtype)
                 or (isinstance(val, float) and val.is_integer())
                 for val in y_non_null
             )

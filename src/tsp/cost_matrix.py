@@ -19,7 +19,7 @@ class CostCalculator(ABC):
     """Abstract base class for cost matrix calculators."""
 
     @abstractmethod
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
         """Calculate the cost matrix for the given DataFrame.
 
         Args:
@@ -86,7 +86,7 @@ class EuclideanCalculator(CostCalculator):
 
         return df_with_utm
 
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
         """Calculate Euclidean distance matrix for x/y coordinates."""
         if not self.supports_coordinates(df):
             raise ValueError(
@@ -99,7 +99,7 @@ class EuclideanCalculator(CostCalculator):
         coords = df[["x", "y"]].values
 
         # Calculate pairwise Euclidean distances (vectorized)
-        distances = squareform(pdist(coords, metric="euclidean")) / 1000
+        distances = squareform(pdist(coords, metric="euclidean"))
 
         # Create DataFrame with node names as index/columns
         node_names = df["name"].tolist() if "name" in df.columns else df.index.tolist()
@@ -113,7 +113,7 @@ class GeodesicCalculator(CostCalculator):
         """Check if DataFrame has lat and lon columns."""
         return self.has_latlon(df)
 
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
         """Calculate geodesic distance matrix for lat/lon coordinates."""
         if not self.supports_coordinates(df):
             raise ValueError("DataFrame must have 'lat' and 'lon' columns")
@@ -128,7 +128,7 @@ class GeodesicCalculator(CostCalculator):
             if i != j:
                 point1 = (coords[i][0], coords[i][1])  # (lat, lon)
                 point2 = (coords[j][0], coords[j][1])  # (lat, lon)
-                distances[i][j] = geodesic(point1, point2).kilometers
+                distances[i][j] = geodesic(point1, point2).meters
 
         # Create DataFrame with node names as index/columns
         node_names = df["name"].tolist() if "name" in df.columns else df.index.tolist()
@@ -157,7 +157,7 @@ class OpenRouteServiceCalculator(CostCalculator):
         """Check if DataFrame has lat and lon columns."""
         return "lat" in df.columns and "lon" in df.columns
 
-    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
+    def calculate_cost_matrix(self, df: pd.DataFrame) -> pd.DataFrame[float]:
         """Calculate cost matrix using OpenRouteService API."""
         if not self.supports_coordinates(df):
             raise ValueError("DataFrame must have 'lat' and 'lon' columns")
@@ -216,7 +216,7 @@ class CostMatrixFactory:
 
 def calculate_cost_matrix(
     df: pd.DataFrame, method: str | None = None, **kwargs  # noqa: ANN003
-) -> pd.DataFrame:
+) -> pd.DataFrame[float]:
     """Convenience function to calculate cost matrix.
 
     Args:

@@ -1,10 +1,10 @@
-id,name,node_type,lon,lat
-1, hotel, startend, 2.3542, 48.8527
-2, Sacre Coeur, permanent, 2.3431, 48.8867
-3, Louvre, permanent, 2.3376, 48.8607
-4, Montmartre, permanent, 2.3388, 48.8872
-5, Port de Suffren, permanent, 2.2902, 48.8577
-6, Arc de Triomphe, permanent, 2.2950, 48.8739
-7, Av. Champs Élysées, permanent, 2.3036, 48.8710
-8, Notre Dame, permanent, 2.3498, 48.8531
-9, Tour Eiffel, permanent, 2.2945, 48.8585
+name,node_type,lon,lat
+hotel, startend, 2.3542, 48.8527
+Sacre Coeur, permanent, 2.3431, 48.8867
+Louvre, permanent, 2.3376, 48.8607
+Montmartre, permanent, 2.3388, 48.8872
+Port de Suffren, permanent, 2.2902, 48.8577
+Arc de Triomphe, permanent, 2.2950, 48.8739
+Av. Champs Élysées, permanent, 2.3036, 48.8710
+Notre Dame, permanent, 2.3498, 48.8531
+Tour Eiffel, permanent, 2.2945, 48.8585

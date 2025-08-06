@@ -10,7 +10,7 @@ from cost_matrix import CostMatrixFactory, calculate_cost_matrix
 from node_schema import NodeInputModel
 
 
-def create_sample_xy_data():
+def create_sample_xy_data() -> pd.DataFrame:
     """Create sample data with x/y coordinates."""
     return pd.DataFrame(
         {
@@ -23,7 +23,7 @@ def create_sample_xy_data():
     )
 
 
-def create_sample_latlon_data():
+def create_sample_latlon_data() -> pd.DataFrame:
     """Create sample data with lat/lon coordinates (Paris area)."""
     return pd.DataFrame(
         {
@@ -36,7 +36,9 @@ def create_sample_latlon_data():
     )
 
 
-def solve_tsp_with_cost_matrix(df, cost_matrix):
+def solve_tsp_with_cost_matrix(
+    df: pd.DataFrame, cost_matrix: pd.DataFrame[float]
+) -> pyo.ConcreteModel:
     """Solve TSP using the provided cost matrix.
 
     Args:
@@ -44,66 +46,66 @@ def solve_tsp_with_cost_matrix(df, cost_matrix):
         cost_matrix: Cost matrix as DataFrame
 
     Returns:
-        Solved Pyomo model
+        The solved Pyomo model
     """
     # Create TSP model
-    model = pyo.ConcreteModel("TSP_with_cost_matrix")
+    tsp_model = pyo.ConcreteModel("TSP_with_cost_matrix")
 
     # Sets
     sites = cost_matrix.index.tolist()
-    model.sites = pyo.Set(initialize=sites, doc="Set of all sites")
+    tsp_model.sites = pyo.Set(initialize=sites, doc="Set of all sites")
 
     # Valid arcs (all pairs except self-loops)
-    def valid_arc_filter(model, i, j):
+    def valid_arc_filter(model: pyo.ConcreteModel, i: int, j: int) -> bool:
         return i != j
 
-    model.valid_arcs = pyo.Set(
-        initialize=model.sites * model.sites,
+    tsp_model.valid_arcs = pyo.Set(
+        initialize=tsp_model.sites * tsp_model.sites,
         filter=valid_arc_filter,
         doc="Valid arcs between sites",
     )
 
     # Parameters - distance from cost matrix
-    def distance_param(model, i, j):
+    def distance_param(model: pyo.ConcreteModel, i: int, j: int) -> float:
         return cost_matrix.loc[i, j]
 
-    model.distance = pyo.Param(
-        model.valid_arcs, initialize=distance_param, doc="Distance between sites"
+    tsp_model.distance = pyo.Param(
+        tsp_model.valid_arcs, initialize=distance_param, doc="Distance between sites"
     )
 
     # Variables
-    model.x = pyo.Var(
-        model.valid_arcs,
+    tsp_model.x = pyo.Var(
+        tsp_model.valid_arcs,
         within=pyo.Binary,
         doc="Whether to travel from site i to site j",
     )
 
     # Objective - minimize total distance
-    def total_distance(model):
+    def total_distance(model: pyo.ConcreteModel) -> float:
         return pyo.summation(model.distance, model.x)
 
-    model.obj = pyo.Objective(rule=total_distance, sense=pyo.minimize)
+    tsp_model.obj = pyo.Objective(rule=total_distance, sense=pyo.minimize)
 
     # Constraints
     # Each site must be entered exactly once
-    def enter_once(model, j):
+    def enter_once(model: pyo.ConcreteModel, j: int) -> bool:
         return sum(model.x[i, j] for i in model.sites if i != j) == 1
 
-    model.enter_once = pyo.Constraint(model.sites, rule=enter_once)
+    tsp_model.enter_once = pyo.Constraint(tsp_model.sites, rule=enter_once)
 
     # Each site must be exited exactly once
-    def exit_once(model, i):
+    def exit_once(model: pyo.ConcreteModel, i: int) -> bool:
         return sum(model.x[i, j] for j in model.sites if i != j) == 1
 
-    model.exit_once = pyo.Constraint(model.sites, rule=exit_once)
+    tsp_model.exit_once = pyo.Constraint(tsp_model.sites, rule=exit_once)
 
     # Subtour elimination (simplified - for demonstration)
     # In practice, you'd use more sophisticated subtour elimination
 
-    return model
+    return tsp_model
 
 
-def demonstrate_xy_coordinates():
+def demonstrate_xy_coordinates() -> None:
     """Demonstrate cost matrix calculation with x/y coordinates."""
     print("=== Demonstration with x/y coordinates ===")
 
@@ -133,7 +135,7 @@ def demonstrate_xy_coordinates():
     print()
 
 
-def demonstrate_latlon_coordinates():
+def demonstrate_latlon_coordinates() -> None:
     """Demonstrate cost matrix calculation with lat/lon coordinates."""
     print("=== Demonstration with lat/lon coordinates ===")
 
@@ -166,7 +168,7 @@ def demonstrate_latlon_coordinates():
     print()
 
 
-def demonstrate_tsp_integration():
+def demonstrate_tsp_integration() -> None:
     """Demonstrate integration with TSP solver."""
     print("=== TSP Integration Demonstration ===")
 
@@ -212,16 +214,23 @@ def demonstrate_tsp_integration():
     print()
 
 
-def demonstrate_method_comparison():
+def demonstrate_method_comparison() -> None:
     """Compare different distance calculation methods."""
     print("=== Method Comparison ===")
 
     # Use lat/lon data
-    df = create_sample_latlon_data()
+    #    df = create_sample_latlon_data()
+    df = pd.DataFrame(
+        {
+            "name": ["Oslo", "Stockholm", "Copenhagen"],
+            "lat": [59.9133, 59.3294, 55.6761],
+            "lon": [10.7389, 18.0686, 12.5683],
+        }
+    )
 
     # Calculate distances between first two points using different methods
     point1 = df.iloc[0]["name"]
-    point2 = df.iloc[1]["name"]
+    point2 = df.iloc[2]["name"]
 
     methods = ["geodesic", "euclidean"]
 
