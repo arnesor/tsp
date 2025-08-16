@@ -36,6 +36,7 @@ class NodeInputModel(pa.DataFrameModel):
 
     @pa.dataframe_check
     def _coords_valid(cls, df: DataFrame["NodeInputModel"]) -> Series[bool]:
+        # TODO: Check only one startend, or one start and one end.
         result = pd.Series([False] * len(df))
 
         # Check if both lon and lat columns exist and have valid values

@@ -6,7 +6,7 @@ from typing import cast
 import folium
 import pandas as pd
 
-from .node_schema import NodeInputModel
+from node_schema import NodeInputModel
 
 
 def show_map(tsp_map: folium.Map) -> None:
