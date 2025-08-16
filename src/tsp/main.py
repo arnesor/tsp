@@ -160,6 +160,7 @@ print_model_info(m_tsp)
 
 res = solver.solve(m_tsp)  # optimize the model
 print(f"Optimal solution found: {pyo.check_optimal_termination(res)}")
+print(f"Objective value: {pyo.value(m_tsp.obj_total_distance):.0f}")
 m_tsp.x_ij.pprint()
 
 

@@ -16,12 +16,12 @@ def total_cost(model: pyo.ConcreteModel) -> float:
 
 def node_is_entered_once(model: pyo.ConcreteModel, j: str) -> bool:
     """Each node j must be visited from exactly one other node."""
-    return sum(model.x_ij[i, j] for i in model.sites if i != j) == 1
+    return sum(model.x_ij[i, j] for i in model.nodes if i != j) == 1
 
 
 def node_is_exited_once(model: pyo.ConcreteModel, i: str) -> bool:
     """Each node i must departure to exactly one other node."""
-    return sum(model.x_ij[i, j] for j in model.sites if j != i) == 1
+    return sum(model.x_ij[i, j] for j in model.nodes if j != i) == 1
 
 
 def path_is_single_tour(model: pyo.ConcreteModel, i: str, j: str) -> bool:
@@ -32,31 +32,32 @@ def path_is_single_tour(model: pyo.ConcreteModel, i: str, j: str) -> bool:
     r_i = model.rank_i[i]
     r_j = model.rank_i[j]
     x_ij = model.x_ij[i, j]
-    return r_j >= r_i + x_ij + (1 - x_ij) * model.M
+    # Standard MTZ form: r_j >= r_i + 1 - M * (1 - x_ij), with M = |S*|
+    return r_j >= r_i + 1 - model.M * (1 - x_ij)
 
 
-def create_tsp_model(cost_matrix: pd.DataFrame) -> pyo.ConcreteModel:
+def create_tsp_model(
+    cost_matrix: pd.DataFrame, startend_name: str | None = None
+) -> pyo.ConcreteModel:
+    if startend_name is not None:
+        assert (
+            startend_name in cost_matrix.index
+        ), f"Startend node {startend_name} not found in cost matrix"
+
     model = pyo.ConcreteModel("TSP")
-
-    # Find startend node (first node with type 'startend')
-    startend_rows = cost_matrix.loc[cost_matrix["node_type"] == "startend"]
-    if len(startend_rows) >= 1:
-        startend_name = startend_rows.index[0]
-    else:
-        startend_name = cost_matrix.index[0]
     list_of_nodes = cost_matrix.index.tolist()
 
     # Sets
 
     model.nodes = pyo.Set(
         initialize=list_of_nodes,
-        domain=pyo.Any,
+        within=pyo.Any,
         doc="Set of all nodes to be visited (S)",
     )
 
     model.nodes_except_startend = pyo.Set(
-        initialize=model.sites - {startend_name},
-        domain=model.sites,
+        initialize=model.nodes - {startend_name},
+        within=model.nodes,
         doc="Nodes of interest, i.e., all nodes except the startend node (S*)",
     )
 
@@ -65,7 +66,7 @@ def create_tsp_model(cost_matrix: pd.DataFrame) -> pyo.ConcreteModel:
         filter=valid_arc_filter,
         doc=valid_arc_filter.__doc__,
     )
-    model.valid_arcs.pprint()
+    # (Avoid pprint in library code)
 
     # Parameters
 
@@ -81,11 +82,12 @@ def create_tsp_model(cost_matrix: pd.DataFrame) -> pyo.ConcreteModel:
         initialize=costs_init,
         doc="Cost between node i and node j (Cij).",
     )
-    # model.distance_ij.pprint()
+    # model.cost_ij.pprint()
 
+    # Use standard MTZ big-M: M = |S*|
     model.M = pyo.Param(
-        initialize=1 - len(model.nodes_except_startend),
-        doc="big M to make some constraints redundant",
+        initialize=len(model.nodes_except_startend),
+        doc="Big-M constant for MTZ subtour elimination (M = |S*|)",
     )
 
     # Variables
@@ -117,18 +119,18 @@ def create_tsp_model(cost_matrix: pd.DataFrame) -> pyo.ConcreteModel:
         model.nodes, rule=node_is_entered_once, doc=node_is_entered_once.__doc__
     )
     model.constr_each_site_is_exited_once = pyo.Constraint(
-        model.sites, rule=node_is_exited_once, doc=node_is_exited_once.__doc__
+        model.nodes, rule=node_is_exited_once, doc=node_is_exited_once.__doc__
     )
 
     # Subtour elimination
 
-    # cross product of non-hotel sites, to index the constraint
+    # cross product of permanent nodes, to index the constraint
     permanent_node_pairs = model.nodes_except_startend * model.nodes_except_startend
 
     model.constr_path_is_single_tour = pyo.Constraint(
         permanent_node_pairs, rule=path_is_single_tour, doc=path_is_single_tour.__doc__
     )
-    # m_tsp.constr_path_is_single_tour.pprint()
-    model.pprint()
+    # (Avoid pprint in library code)
+    # model.pprint()
 
     return model

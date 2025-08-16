@@ -1,0 +1,58 @@
+from node_schema import NodeInputModel
+from tsp_model import create_tsp_model
+from cost_matrix import calculate_cost_matrix
+import pandas as pd
+from pathlib import Path
+from pyomo.contrib.latex_printer import latex_printer
+import pyomo.environ as pyo
+import pyomo.version
+
+
+def print_model_info(model: pyo.ConcreteModel) -> None:
+    """Print model information."""
+    print(
+        f"Name: {model.name}",
+        f"Num variables: {model.nvariables()}",
+        f"Num constraints: {model.nconstraints()}",
+        sep="\n- ",
+    )
+
+
+def main():
+    filename = Path(__file__).parent.parent.parent / "data" / "Paris.csv"
+    nodes = pd.read_csv(filename, skipinitialspace=True)
+    NodeInputModel.validate(nodes)
+
+    # Find startend node (first node with type 'startend')
+    startend_rows = nodes.loc[nodes["node_type"] == "startend"]
+    if len(startend_rows) >= 1:
+        startend_name = startend_rows["name"].iloc[0]
+    else:
+        startend_name = nodes["name"].iloc[0]
+
+    cost_matrix = calculate_cost_matrix(nodes, method="geodesic")
+    model = create_tsp_model(cost_matrix, startend_name)
+
+    # model.pprint()
+    # latex_printer(model, ostream="model.tex", use_equation_environment=True)
+
+    # Solving
+
+    solver = pyo.SolverFactory("highs")
+    solver_available = solver.available(exception_flag=False)
+    print(f"Solver '{solver.name}' available: {solver_available}")
+
+    if solver_available:
+        print(f"Solver version: {solver.version()}")
+    print("pyomo version:", pyomo.version.__version__)
+
+    print_model_info(model)
+
+    result = solver.solve(model)  # optimize the model
+    print(f"Optimal solution found: {pyo.check_optimal_termination(result)}")
+    print(f"Objective value: {pyo.value(model.obj_total_cost):.0f}")
+    # model.x_ij.pprint()
+
+
+if __name__ == "__main__":
+    main()
