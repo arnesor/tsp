@@ -5,7 +5,6 @@ from typing import cast
 
 import folium
 import pandas as pd
-
 from node_schema import NodeInputModel
 
 

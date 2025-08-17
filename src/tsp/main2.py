@@ -1,11 +1,11 @@
-from node_schema import NodeInputModel
-from tsp_model import create_tsp_model
-from cost_matrix import calculate_cost_matrix
-import pandas as pd
 from pathlib import Path
-from pyomo.contrib.latex_printer import latex_printer
+
+import pandas as pd
 import pyomo.environ as pyo
 import pyomo.version
+from cost_matrix import calculate_cost_matrix
+from node_schema import NodeInputModel
+from tsp_model import create_tsp_model
 
 
 def print_model_info(model: pyo.ConcreteModel) -> None:
@@ -18,7 +18,8 @@ def print_model_info(model: pyo.ConcreteModel) -> None:
     )
 
 
-def main():
+def main() -> None:
+    """Main function."""
     filename = Path(__file__).parent.parent.parent / "data" / "Paris.csv"
     nodes = pd.read_csv(filename, skipinitialspace=True)
     NodeInputModel.validate(nodes)

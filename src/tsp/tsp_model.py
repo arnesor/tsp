@@ -39,6 +39,22 @@ def path_is_single_tour(model: pyo.ConcreteModel, i: str, j: str) -> bool:
 def create_tsp_model(
     cost_matrix: pd.DataFrame, startend_name: str | None = None
 ) -> pyo.ConcreteModel:
+    """Creates a Traveling Salesman Problem (TSP) model using Pyomo.
+
+    This function generates a ConcreteModel instance for the TSP based
+    on the provided cost matrix.
+
+    Args:
+        cost_matrix: A square DataFrame where both the index
+            and columns represent the nodes, and each entry represents the
+            travel cost between two nodes. Diagonal entries should be zero
+            (or ignored).
+        startend_name: Optional. The name of the start and end node (start-end depot).
+            If not provided, the TSP may use any node as the start or end node.
+
+    Returns:
+        A Pyomo ConcreteModel instance encapsulating the TSP.
+    """
     if startend_name is not None:
         assert (
             startend_name in cost_matrix.index
