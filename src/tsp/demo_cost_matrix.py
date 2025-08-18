@@ -8,7 +8,7 @@ import pandas as pd
 import pyomo.environ as pyo
 
 from .cost_matrix import CostMatrixFactory, calculate_cost_matrix
-from .node_schema import NodeInputModel
+from .tsp_data import TspData
 
 
 def create_sample_xy_data() -> pd.DataFrame:
@@ -116,22 +116,24 @@ def demonstrate_xy_coordinates() -> None:
     print(df)
     print()
 
-    # Validate data
+    # Create TspData instance (validation happens automatically)
     try:
-        NodeInputModel.validate(df)
+        tsp_data = TspData.from_dataframe(df)
         print("✓ Data validation passed")
+        print(f"✓ Detected coordinate system: {tsp_data.coordinate_system}")
+        print(f"✓ Data type: {type(tsp_data).__name__}")
     except Exception as e:
         print(f"❌ Data validation failed: {e}")
         return
 
-    # Calculate cost matrix using default method (Euclidean for x/y)
-    cost_matrix = calculate_cost_matrix(df)
+    # Calculate cost matrix using TspData method
+    cost_matrix = tsp_data.calculate_cost_matrix()
     print("\nCost matrix (Euclidean distance):")
     print(cost_matrix.round(2))
     print()
 
     # Show factory selection
-    calculator = CostMatrixFactory.create_calculator(df)
+    calculator = CostMatrixFactory.create_calculator(tsp_data)
     print(f"Automatically selected calculator: {type(calculator).__name__}")
     print()
 
@@ -146,10 +148,12 @@ def demonstrate_latlon_coordinates() -> None:
     print(df)
     print()
 
-    # Validate data
+    # Create TspData instance (validation happens automatically)
     try:
-        NodeInputModel.validate(df)
+        tsp_data = TspData.from_dataframe(df)
         print("✓ Data validation passed")
+        print(f"✓ Detected coordinate system: {tsp_data.coordinate_system}")
+        print(f"✓ Data type: {type(tsp_data).__name__}")
     except Exception as e:
         print(f"❌ Data validation failed: {e}")
         return
@@ -159,11 +163,11 @@ def demonstrate_latlon_coordinates() -> None:
 
     for method in methods:
         print(f"\nCost matrix using {method} method:")
-        cost_matrix = calculate_cost_matrix(df, method=method)
+        cost_matrix = tsp_data.calculate_cost_matrix(method=method)
         print(cost_matrix.round(3))
 
         # Show calculator type
-        calculator = CostMatrixFactory.create_calculator(df, method=method)
+        calculator = CostMatrixFactory.create_calculator(tsp_data, method=method)
         print(f"Calculator used: {type(calculator).__name__}")
 
     print()
@@ -175,7 +179,8 @@ def demonstrate_tsp_integration() -> None:
 
     # Use x/y data for simplicity
     df = create_sample_xy_data()
-    cost_matrix = calculate_cost_matrix(df)
+    tsp_data = TspData.from_dataframe(df)
+    cost_matrix = tsp_data.calculate_cost_matrix()
 
     print("Solving TSP with calculated cost matrix...")
     print("Cost matrix:")

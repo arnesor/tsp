@@ -112,9 +112,9 @@ class TestCostMatrixFactory:
         calc_xy = CostMatrixFactory.create_calculator(df_xy)
         assert isinstance(calc_xy, EuclideanCalculator)
 
-        # Default (should pick EuclideanCalculator for lat/lon)
+        # Default (should pick GeodesicCalculator for lat/lon)
         calc_latlon = CostMatrixFactory.create_calculator(df_latlon)
-        assert isinstance(calc_latlon, EuclideanCalculator)
+        assert isinstance(calc_latlon, GeodesicCalculator)
 
         # Explicit method: euclidean
         calc_euclid = CostMatrixFactory.create_calculator(df_xy, method="euclidean")

@@ -7,12 +7,16 @@ calculation methods including Euclidean, geodesic, and API-based routing.
 
 import itertools
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from geopy.distance import geodesic
 from pyproj import Transformer
 from scipy.spatial.distance import pdist, squareform
+
+if TYPE_CHECKING:
+    from .tsp_data import TspData
 
 
 class CostCalculator(ABC):
@@ -175,38 +179,57 @@ class CostMatrixFactory:
 
     @staticmethod
     def create_calculator(
-        df: pd.DataFrame, method: str | None = None
+        data: "pd.DataFrame | TspData", method: str | None = None
     ) -> CostCalculator:
-        """Create an appropriate cost calculator based on DataFrame and method.
+        """Create an appropriate cost calculator based on data and method.
 
         Args:
-            df: DataFrame with coordinate data
-            method: Specific method to use ('euclidean_xy', 'geodesic', 'utm_euclidean', 'openroute')
+            data: DataFrame with coordinate data or TspData instance
+            method: Specific method to use ('euclidean', 'geodesic', 'openroute')
                    If None, uses default based on coordinate system
 
         Returns:
             Appropriate CostCalculator instance
         """
-        has_latlon = CostCalculator.has_latlon(df)
-        has_xy = CostCalculator.has_xy(df)
+        # Import here to avoid circular imports
+        from .tsp_data import CoordinateSystem, TspData
 
-        if method is None:
-            if has_latlon or has_xy:
-                return EuclideanCalculator()
+        # Handle both DataFrame and TspData inputs
+        if isinstance(data, TspData):
+            coordinate_system = data.coordinate_system
+            df = data.data
+        else:
+            # Legacy DataFrame support
+            df = data
+            has_latlon = CostCalculator.has_latlon(df)
+            has_xy = CostCalculator.has_xy(df)
+            
+            if has_latlon:
+                coordinate_system = CoordinateSystem.GEOGRAPHIC
+            elif has_xy:
+                coordinate_system = CoordinateSystem.CARTESIAN
             else:
                 raise ValueError(
                     "DataFrame must have either 'x'/'y' or 'lat'/'lon' columns"
                 )
 
+        # Select appropriate calculator based on method and coordinate system
+        if method is None:
+            # Use default based on coordinate system
+            if coordinate_system == CoordinateSystem.GEOGRAPHIC:
+                return GeodesicCalculator()
+            else:
+                return EuclideanCalculator()
+
         if method == "euclidean":
             return EuclideanCalculator()
         elif method == "geodesic":
-            if not has_latlon:
-                raise ValueError("geodesic method requires 'lat' and 'lon' columns")
+            if coordinate_system != CoordinateSystem.GEOGRAPHIC:
+                raise ValueError("geodesic method requires geographic coordinates (lat/lon)")
             return GeodesicCalculator()
         elif method == "openroute":
-            if not has_latlon:
-                raise ValueError("openroute method requires 'lat' and 'lon' columns")
+            if coordinate_system != CoordinateSystem.GEOGRAPHIC:
+                raise ValueError("openroute method requires geographic coordinates (lat/lon)")
             raise NotImplementedError(
                 "OpenRouteService calculator not fully implemented"
             )
