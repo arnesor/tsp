@@ -1,6 +1,4 @@
 from enum import StrEnum
-from typing import cast
-
 import pandas as pd
 import pandera.pandas as pa
 from pandera.typing import DataFrame, Series
@@ -23,58 +21,85 @@ class NodeType(StrEnum):
     STARTEND = "startend"
 
 
-class NodeInputModel(pa.DataFrameModel):
-    """Schema for validating nodes or sites/controls input data."""
+def _validate_node_configuration(df: pd.DataFrame) -> bool:
+    """Check that the dataframe has a valid node configuration.
+
+    Valid configurations:
+    1. Only permanent nodes
+    2. One startend node and the rest permanent nodes
+    3. One start node, one end node, and the rest permanent nodes
+
+    Args:
+        df: DataFrame with node_type column to validate
+
+    Returns:
+        bool: True if the node configuration is valid, False otherwise
+    """
+    node_types = df["node_type"].str.strip()
+
+    start_count = (node_types == "start").sum()
+    end_count = (node_types == "end").sum()
+    startend_count = (node_types == "startend").sum()
+    permanent_count = (node_types == "permanent").sum()
+
+    total_nodes = len(df)
+
+    if permanent_count == total_nodes:
+        return True
+
+    if startend_count == 1 and permanent_count == total_nodes - 1:
+        return True
+
+    return start_count == 1 and end_count == 1 and permanent_count == total_nodes - 2
+
+
+class GeographicNodeModel(pa.DataFrameModel):
+    """Schema for nodes with lat/lon coordinates."""
 
     name: Series[str] = pa.Field(str_length={"min_value": 1}, unique=True)
     node_type: Series[str] = pa.Field(isin=[n.value for n in NodeType])
+    lat: Series[float] = pa.Field(ge=-90.0, le=90.0)
+    lon: Series[float] = pa.Field(ge=-180.0, le=180.0)
 
     class Config:
-        """Allow extra columns in the input data."""
+        """Configuration for the schema."""
 
         strict = False
+        coerce = True  # Enable automatic type coercion
 
     @pa.dataframe_check
-    def _coords_valid(cls, df: DataFrame["NodeInputModel"]) -> Series[bool]:
-        # TODO: Check only one startend, or one start and one end.
-        result = pd.Series([False] * len(df))
+    def _has_valid_node_configuration(cls, df: DataFrame["GeographicNodeModel"]) -> bool:
+        """Check that the dataframe has a valid node configuration.
 
-        # Check if both lon and lat columns exist and have valid values
-        if "lon" in df.columns and "lat" in df.columns:
-            lon_is_float = pd.api.types.is_float_dtype(df["lon"])
-            lat_is_float = pd.api.types.is_float_dtype(df["lat"])
+        Valid configurations:
+        1. Only permanent nodes
+        2. One startend node and the rest permanent nodes
+        3. One start node, one end node, and the rest permanent nodes
+        """
+        return _validate_node_configuration(df)
 
-            if lon_is_float and lat_is_float:
-                # Validate longitude and latitude ranges and non-null values
-                lon_valid = (
-                    df["lon"].notna() & (df["lon"] >= -180.0) & (df["lon"] <= 180.0)
-                )
-                lat_valid = (
-                    df["lat"].notna() & (df["lat"] >= -90.0) & (df["lat"] <= 90.0)
-                )
-                has_valid_lon_lat = lon_valid & lat_valid
-                result = result | has_valid_lon_lat
 
-        # Check if both x and y columns exist and have valid (non-null) values
-        if "x" in df.columns and "y" in df.columns:
-            # For mixed data with None values, check if non-null values are integers
-            x_non_null = df["x"].dropna()
-            y_non_null = df["y"].dropna()
+class CartesianNodeModel(pa.DataFrameModel):
+    """Schema for nodes with x/y coordinates."""
 
-            # Check if non-null values are integers (or can be converted to integers)
-            x_is_int = len(x_non_null) == 0 or all(
-                isinstance(val, int | pd.Int64Dtype)
-                or (isinstance(val, float) and val.is_integer())
-                for val in x_non_null
-            )
-            y_is_int = len(y_non_null) == 0 or all(
-                isinstance(val, int | pd.Int64Dtype)
-                or (isinstance(val, float) and val.is_integer())
-                for val in y_non_null
-            )
+    name: Series[str] = pa.Field(str_length={"min_value": 1}, unique=True)
+    node_type: Series[str] = pa.Field(isin=[n.value for n in NodeType])
+    x: Series[float]
+    y: Series[float]
 
-            if x_is_int and y_is_int:
-                has_valid_x_y = df["x"].notna() & df["y"].notna()
-                result = result | has_valid_x_y
+    class Config:
+        """Configuration for the schema."""
 
-        return cast(Series[bool], result)
+        strict = False
+        coerce = True  # Enable automatic type coercion
+
+    @pa.dataframe_check
+    def _has_valid_node_configuration(cls, df: DataFrame["CartesianNodeModel"]) -> bool:
+        """Check that the dataframe has a valid node configuration.
+
+        Valid configurations:
+        1. Only permanent nodes
+        2. One startend node and the rest permanent nodes
+        3. One start node, one end node, and the rest permanent nodes
+        """
+        return _validate_node_configuration(df)
