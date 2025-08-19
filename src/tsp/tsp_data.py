@@ -39,10 +39,32 @@ class GeographicNodeModel(pa.DataFrameModel):
         coerce = True  # Enable automatic type coercion
 
     @pa.dataframe_check
-    def _has_start_or_startend(cls, df: DataFrame[GeographicNodeModel]) -> bool:
-        """Check that there's at least one start or startend node."""
-        start_types = {"start", "startend"}
-        return any(node_type.strip() in start_types for node_type in df["node_type"])
+    def _has_valid_node_configuration(cls, df: DataFrame[GeographicNodeModel]) -> bool:
+        """Check that the dataframe has a valid node configuration.
+
+        Valid configurations:
+        1. Only permanent nodes
+        2. One startend node and the rest permanent nodes
+        3. One start node, one end node, and the rest permanent nodes
+        """
+        node_types = df["node_type"].str.strip()
+
+        start_count = (node_types == "start").sum()
+        end_count = (node_types == "end").sum()
+        startend_count = (node_types == "startend").sum()
+        permanent_count = (node_types == "permanent").sum()
+
+        total_nodes = len(df)
+
+        if permanent_count == total_nodes:
+            return True
+
+        if startend_count == 1 and permanent_count == total_nodes - 1:
+            return True
+
+        return (
+            start_count == 1 and end_count == 1 and permanent_count == total_nodes - 2
+        )
 
 
 class CartesianNodeModel(pa.DataFrameModel):
@@ -60,10 +82,32 @@ class CartesianNodeModel(pa.DataFrameModel):
         coerce = True  # Enable automatic type coercion
 
     @pa.dataframe_check
-    def _has_start_or_startend(cls, df: DataFrame[CartesianNodeModel]) -> bool:
-        """Check that there's at least one start or startend node."""
-        start_types = {"start", "startend"}
-        return any(node_type.strip() in start_types for node_type in df["node_type"])
+    def _has_valid_node_configuration(cls, df: DataFrame[CartesianNodeModel]) -> bool:
+        """Check that the dataframe has a valid node configuration.
+
+        Valid configurations:
+        1. Only permanent nodes
+        2. One startend node and the rest permanent nodes
+        3. One start node, one end node, and the rest permanent nodes
+        """
+        node_types = df["node_type"].str.strip()
+
+        start_count = (node_types == "start").sum()
+        end_count = (node_types == "end").sum()
+        startend_count = (node_types == "startend").sum()
+        permanent_count = (node_types == "permanent").sum()
+
+        total_nodes = len(df)
+
+        if permanent_count == total_nodes:
+            return True
+
+        if startend_count == 1 and permanent_count == total_nodes - 1:
+            return True
+
+        return (
+            start_count == 1 and end_count == 1 and permanent_count == total_nodes - 2
+        )
 
 
 class TspData(ABC):
@@ -93,12 +137,12 @@ class TspData(ABC):
             Cleaned DataFrame
         """
         df_clean = df.copy()
-        
+
         # Strip whitespace from string columns
         for col in df_clean.columns:
-            if df_clean[col].dtype == 'object':  # String columns
+            if df_clean[col].dtype == "object":  # String columns
                 df_clean[col] = df_clean[col].astype(str).str.strip()
-        
+
         return df_clean
 
     @abstractmethod
