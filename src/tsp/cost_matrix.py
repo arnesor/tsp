@@ -203,7 +203,7 @@ class CostMatrixFactory:
             df = data
             has_latlon = CostCalculator.has_latlon(df)
             has_xy = CostCalculator.has_xy(df)
-            
+
             if has_latlon:
                 coordinate_system = CoordinateSystem.GEOGRAPHIC
             elif has_xy:
@@ -225,11 +225,15 @@ class CostMatrixFactory:
             return EuclideanCalculator()
         elif method == "geodesic":
             if coordinate_system != CoordinateSystem.GEOGRAPHIC:
-                raise ValueError("geodesic method requires geographic coordinates (lat/lon)")
+                raise ValueError(
+                    "geodesic method requires geographic coordinates (lat/lon)"
+                )
             return GeodesicCalculator()
         elif method == "openroute":
             if coordinate_system != CoordinateSystem.GEOGRAPHIC:
-                raise ValueError("openroute method requires geographic coordinates (lat/lon)")
+                raise ValueError(
+                    "openroute method requires geographic coordinates (lat/lon)"
+                )
             raise NotImplementedError(
                 "OpenRouteService calculator not fully implemented"
             )

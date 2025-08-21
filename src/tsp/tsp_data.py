@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import StrEnum
+from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
@@ -34,28 +35,8 @@ class TspData(ABC):
         Raises:
             ValueError: If validation fails
         """
-        preprocessed_df = self._preprocess(df)
-        self._df = self._validate(preprocessed_df)
+        self._df = self._validate(df)
         self._coordinate_system = self._get_coordinate_system()
-
-    @staticmethod
-    def _preprocess(df: pd.DataFrame) -> pd.DataFrame:
-        """Preprocess DataFrame to clean data before validation.
-
-        Args:
-            df: Raw DataFrame
-
-        Returns:
-            Cleaned DataFrame
-        """
-        df_clean = df.copy()
-
-        # Strip whitespace from string columns
-        for col in df_clean.columns:
-            if df_clean[col].dtype == "object":  # String columns
-                df_clean[col] = df_clean[col].astype(str).str.strip()
-
-        return df_clean
 
     @abstractmethod
     def _validate(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -76,7 +57,7 @@ class TspData(ABC):
         """Get the coordinate system type for this data."""
 
     @classmethod
-    def from_csv(cls, filepath: str) -> TspData:
+    def from_csv(cls, filepath: Path) -> TspData:
         """Factory method to create TspData from CSV file.
 
         Args:
@@ -89,7 +70,7 @@ class TspData(ABC):
             ValueError: If CSV doesn't contain valid coordinate data
             FileNotFoundError: If file doesn't exist
         """
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, skipinitialspace=True)
 
         # Auto-detect coordinate system and return appropriate subclass
         if cls._has_geographic_coords(df):
@@ -140,6 +121,14 @@ class TspData(ABC):
     def data(self) -> pd.DataFrame:
         """Get a copy of the validated DataFrame."""
         return self._df.copy()
+
+    def df(self) -> pd.DataFrame:
+        """Get the pandas DataFrame for the object.
+
+        Returns:
+            The validated DataFrame
+        """
+        return self._df
 
     @property
     def coordinate_system(self) -> CoordinateSystem:

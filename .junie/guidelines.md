@@ -66,10 +66,10 @@ class TestMyFeature:
     def test_my_function_happy_path(self):
         # Arrange: Set up test data
         input_data = create_test_data()
-        
+
         # Act: Execute the function
         result = my_function(input_data)
-        
+
         # Assert: Verify results
         assert result.expected_property == expected_value
 ```

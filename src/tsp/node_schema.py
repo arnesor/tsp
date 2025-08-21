@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from enum import StrEnum
+
 import pandas as pd
 import pandera.pandas as pa
 from pandera.typing import DataFrame, Series
@@ -65,10 +68,10 @@ class GeographicNodeModel(pa.DataFrameModel):
         """Configuration for the schema."""
 
         strict = False
-        coerce = True  # Enable automatic type coercion
+        coerce = True
 
     @pa.dataframe_check
-    def _has_valid_node_configuration(cls, df: DataFrame["GeographicNodeModel"]) -> bool:
+    def _has_valid_node_configuration(cls, df: DataFrame[GeographicNodeModel]) -> bool:
         """Check that the dataframe has a valid node configuration.
 
         Valid configurations:
@@ -91,10 +94,10 @@ class CartesianNodeModel(pa.DataFrameModel):
         """Configuration for the schema."""
 
         strict = False
-        coerce = True  # Enable automatic type coercion
+        coerce = True
 
     @pa.dataframe_check
-    def _has_valid_node_configuration(cls, df: DataFrame["CartesianNodeModel"]) -> bool:
+    def _has_valid_node_configuration(cls, df: DataFrame[CartesianNodeModel]) -> bool:
         """Check that the dataframe has a valid node configuration.
 
         Valid configurations:
