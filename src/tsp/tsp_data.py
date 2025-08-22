@@ -122,14 +122,6 @@ class TspData(ABC):
         """Get a copy of the validated DataFrame."""
         return self._df.copy()
 
-    def df(self) -> pd.DataFrame:
-        """Get the pandas DataFrame for the object.
-
-        Returns:
-            The validated DataFrame
-        """
-        return self._df
-
     @property
     def coordinate_system(self) -> CoordinateSystem:
         """Get the coordinate system type."""
@@ -172,35 +164,6 @@ class TspData(ABC):
 
         calculator = CostMatrixFactory.create_calculator(self, method)
         return calculator.calculate_cost_matrix(self._df)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for serialization.
-
-        Returns:
-            Dictionary representation of the data
-        """
-        return {
-            "data": self._df.to_dict("records"),
-            "coordinate_system": self._coordinate_system.value,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> TspData:
-        """Create TspData from dictionary.
-
-        Args:
-            data: Dictionary with data and coordinate_system keys
-
-        Returns:
-            Appropriate TspData subclass instance
-        """
-        df = pd.DataFrame(data["data"])
-        coord_sys = data["coordinate_system"]
-
-        if coord_sys == CoordinateSystem.GEOGRAPHIC:
-            return GeographicTspData(df)
-        else:
-            return CartesianTspData(df)
 
     def __len__(self) -> int:
         """Get number of nodes."""
