@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import pandas as pd
 
@@ -151,19 +151,20 @@ class TspData(ABC):
         """
         return self._df["name"].tolist()
 
-    def calculate_cost_matrix(self, method: str | None = None) -> pd.DataFrame:
-        """Calculate cost matrix using appropriate method.
+    def get_start_node_name(self) -> str:
+        """Get the name of the startend or start node.
 
-        Args:
-            method: Specific calculation method to use
+        If only permanent nodes, returns the name of the first permanent node.
 
         Returns:
-            Cost matrix as DataFrame
+            The name og start or startend node.
         """
-        from .cost_matrix import CostMatrixFactory
-
-        calculator = CostMatrixFactory.create_calculator(self, method)
-        return calculator.calculate_cost_matrix(self._df)
+        start_nodes = self.get_start_nodes()
+        return (
+            start_nodes["name"].iloc[0]
+            if len(start_nodes) >= 1
+            else self.get_node_names()[0]
+        )
 
     def __len__(self) -> int:
         """Get number of nodes."""

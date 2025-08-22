@@ -38,7 +38,7 @@ def create_sample_latlon_data() -> pd.DataFrame:
 
 
 def solve_tsp_with_cost_matrix(
-    df: pd.DataFrame, cost_matrix: pd.DataFrame[float]
+    df: pd.DataFrame, cost_matrix: pd.DataFrame
 ) -> pyo.ConcreteModel:
     """Solve TSP using the provided cost matrix.
 
@@ -126,8 +126,8 @@ def demonstrate_xy_coordinates() -> None:
         print(f"❌ Data validation failed: {e}")
         return
 
-    # Calculate cost matrix using TspData method
-    cost_matrix = tsp_data.calculate_cost_matrix()
+    # Calculate cost matrix using external function
+    cost_matrix = calculate_cost_matrix(tsp_data.data)
     print("\nCost matrix (Euclidean distance):")
     print(cost_matrix.round(2))
     print()
@@ -163,7 +163,7 @@ def demonstrate_latlon_coordinates() -> None:
 
     for method in methods:
         print(f"\nCost matrix using {method} method:")
-        cost_matrix = tsp_data.calculate_cost_matrix(method=method)
+        cost_matrix = calculate_cost_matrix(tsp_data.data, method=method)
         print(cost_matrix.round(3))
 
         # Show calculator type
@@ -180,7 +180,7 @@ def demonstrate_tsp_integration() -> None:
     # Use x/y data for simplicity
     df = create_sample_xy_data()
     tsp_data = TspData.from_dataframe(df)
-    cost_matrix = tsp_data.calculate_cost_matrix()
+    cost_matrix = calculate_cost_matrix(tsp_data.data)
 
     print("Solving TSP with calculated cost matrix...")
     print("Cost matrix:")

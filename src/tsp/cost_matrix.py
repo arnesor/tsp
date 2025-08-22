@@ -7,7 +7,6 @@ calculation methods including Euclidean, geodesic, and API-based routing.
 
 import itertools
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -15,8 +14,7 @@ from geopy.distance import geodesic
 from pyproj import Transformer
 from scipy.spatial.distance import pdist, squareform
 
-if TYPE_CHECKING:
-    from .tsp_data import TspData
+from .tsp_data import CoordinateSystem
 
 
 class CostCalculator(ABC):
@@ -179,39 +177,29 @@ class CostMatrixFactory:
 
     @staticmethod
     def create_calculator(
-        data: "pd.DataFrame | TspData", method: str | None = None
+        df: pd.DataFrame, method: str | None = None
     ) -> CostCalculator:
         """Create an appropriate cost calculator based on data and method.
 
         Args:
-            data: DataFrame with coordinate data or TspData instance
+            df: DataFrame with coordinate data
             method: Specific method to use ('euclidean', 'geodesic', 'openroute')
                    If None, uses default based on coordinate system
 
         Returns:
             Appropriate CostCalculator instance
         """
-        # Import here to avoid circular imports
-        from .tsp_data import CoordinateSystem, TspData
+        has_latlon = CostCalculator.has_latlon(df)
+        has_xy = CostCalculator.has_xy(df)
 
-        # Handle both DataFrame and TspData inputs
-        if isinstance(data, TspData):
-            coordinate_system = data.coordinate_system
-            df = data.data
+        if has_latlon:
+            coordinate_system = CoordinateSystem.GEOGRAPHIC
+        elif has_xy:
+            coordinate_system = CoordinateSystem.CARTESIAN
         else:
-            # Legacy DataFrame support
-            df = data
-            has_latlon = CostCalculator.has_latlon(df)
-            has_xy = CostCalculator.has_xy(df)
-
-            if has_latlon:
-                coordinate_system = CoordinateSystem.GEOGRAPHIC
-            elif has_xy:
-                coordinate_system = CoordinateSystem.CARTESIAN
-            else:
-                raise ValueError(
-                    "DataFrame must have either 'x'/'y' or 'lat'/'lon' columns"
-                )
+            raise ValueError(
+                "DataFrame must have either 'x'/'y' or 'lat'/'lon' columns"
+            )
 
         # Select appropriate calculator based on method and coordinate system
         if method is None:

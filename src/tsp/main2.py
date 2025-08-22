@@ -1,10 +1,9 @@
 from pathlib import Path
 
-import pandas as pd
 import pyomo.environ as pyo
 import pyomo.version
 from cost_matrix import calculate_cost_matrix
-from node_schema import NodeInputModel
+from tsp_data import TspData
 from tsp_model import create_tsp_model
 
 
@@ -21,18 +20,10 @@ def print_model_info(model: pyo.ConcreteModel) -> None:
 def main() -> None:
     """Main function."""
     filename = Path(__file__).parent.parent.parent / "data" / "Paris.csv"
-    nodes = pd.read_csv(filename, skipinitialspace=True)
-    NodeInputModel.validate(nodes)
+    tsp_data = TspData.from_csv(filename)
 
-    # Find startend node (first node with type 'startend')
-    startend_rows = nodes.loc[nodes["node_type"] == "startend"]
-    if len(startend_rows) >= 1:
-        startend_name = startend_rows["name"].iloc[0]
-    else:
-        startend_name = nodes["name"].iloc[0]
-
-    cost_matrix = calculate_cost_matrix(nodes, method="geodesic")
-    model = create_tsp_model(cost_matrix, startend_name)
+    cost_matrix = calculate_cost_matrix(tsp_data.data, method="geodesic")
+    model = create_tsp_model(cost_matrix, tsp_data.get_start_node_name())
 
     # model.pprint()
     # latex_printer(model, ostream="model.tex", use_equation_environment=True)
