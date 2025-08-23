@@ -118,7 +118,7 @@ class TspData(ABC):
         return "x" in df.columns and "y" in df.columns
 
     @property
-    def data(self) -> pd.DataFrame:
+    def df(self) -> pd.DataFrame:
         """Get a copy of the validated DataFrame."""
         return self._df.copy()
 

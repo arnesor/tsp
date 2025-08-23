@@ -22,10 +22,10 @@ filename = Path(__file__).parent.parent.parent / "data" / "Paris.csv"
 sites = TspData.from_csv(filename)
 print(sites)
 
-avg_location = sites.data[["lat", "lon"]].mean()
+avg_location = sites.df[["lat", "lon"]].mean()
 map_paris = folium.Map(location=avg_location.tolist(), zoom_start=13)
 
-for site in sites.data.itertuples():
+for site in sites.df.itertuples():
     site_loc = cast(Sequence[float], (site.lat, site.lon))
     site_name = cast(str, site.name)
     marker = folium.Marker(location=site_loc, tooltip=site_name)

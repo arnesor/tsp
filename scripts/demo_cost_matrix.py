@@ -7,8 +7,8 @@ different coordinate systems and distance calculation methods.
 import pandas as pd
 import pyomo.environ as pyo
 
-from .cost_matrix import CostMatrixFactory, calculate_cost_matrix
-from .tsp_data import TspData
+from tsp.cost_matrix import CostMatrixFactory, calculate_cost_matrix
+from tsp.tsp_data import TspData
 
 
 def create_sample_xy_data() -> pd.DataFrame:
@@ -127,13 +127,13 @@ def demonstrate_xy_coordinates() -> None:
         return
 
     # Calculate cost matrix using external function
-    cost_matrix = calculate_cost_matrix(tsp_data.data)
+    cost_matrix = calculate_cost_matrix(tsp_data.df)
     print("\nCost matrix (Euclidean distance):")
     print(cost_matrix.round(2))
     print()
 
     # Show factory selection
-    calculator = CostMatrixFactory.create_calculator(tsp_data)
+    calculator = CostMatrixFactory.create_calculator(tsp_data.df)
     print(f"Automatically selected calculator: {type(calculator).__name__}")
     print()
 
@@ -163,11 +163,11 @@ def demonstrate_latlon_coordinates() -> None:
 
     for method in methods:
         print(f"\nCost matrix using {method} method:")
-        cost_matrix = calculate_cost_matrix(tsp_data.data, method=method)
+        cost_matrix = calculate_cost_matrix(tsp_data.df, method=method)
         print(cost_matrix.round(3))
 
         # Show calculator type
-        calculator = CostMatrixFactory.create_calculator(tsp_data, method=method)
+        calculator = CostMatrixFactory.create_calculator(tsp_data.df, method=method)
         print(f"Calculator used: {type(calculator).__name__}")
 
     print()
@@ -180,7 +180,7 @@ def demonstrate_tsp_integration() -> None:
     # Use x/y data for simplicity
     df = create_sample_xy_data()
     tsp_data = TspData.from_dataframe(df)
-    cost_matrix = calculate_cost_matrix(tsp_data.data)
+    cost_matrix = calculate_cost_matrix(tsp_data.df)
 
     print("Solving TSP with calculated cost matrix...")
     print("Cost matrix:")

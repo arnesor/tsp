@@ -2,9 +2,10 @@ from pathlib import Path
 
 import pyomo.environ as pyo
 import pyomo.version
-from cost_matrix import calculate_cost_matrix
-from tsp_data import TspData
-from tsp_model import create_tsp_model
+
+from tsp.cost_matrix import calculate_cost_matrix
+from tsp.tsp_data import TspData
+from tsp.tsp_model import create_tsp_model
 
 
 def print_model_info(model: pyo.ConcreteModel) -> None:
@@ -19,10 +20,10 @@ def print_model_info(model: pyo.ConcreteModel) -> None:
 
 def main() -> None:
     """Main function."""
-    filename = Path(__file__).parent.parent.parent / "data" / "Paris.csv"
+    filename = Path(__file__).parent.parent / "data" / "Paris.csv"
     tsp_data = TspData.from_csv(filename)
 
-    cost_matrix = calculate_cost_matrix(tsp_data.data, method="geodesic")
+    cost_matrix = calculate_cost_matrix(tsp_data.df, method="geodesic")
     model = create_tsp_model(cost_matrix, tsp_data.get_start_node_name())
 
     # model.pprint()
