@@ -43,7 +43,7 @@ def main() -> None:
 
     result = solver.solve(model)  # optimize the model
     print(f"Optimal solution found: {pyo.check_optimal_termination(result)}")
-    print(f"Objective value: {pyo.value(model.obj_total_cost):.0f}")
+    print(f"Objective value: {pyo.value(model.total_cost):.0f}")
     # model.x_ij.pprint()
 
 
