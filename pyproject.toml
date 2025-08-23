@@ -36,9 +36,6 @@ dev = [
     "types-networkx>=3.5.0.20250728",
 ]
 
-[project.scripts]
-tsp = "tsp:main"
-
 [tool.mypy]
 strict = true
 warn_unreachable = true
