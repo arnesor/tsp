@@ -33,7 +33,7 @@ dev = [
     "pytest-cov>=6.2.1",
     "pytest-mock>=3.14.1",
     "ruff>=0.12.7",
-    "scipy-stubs==1.16.1.0",
+    "scipy-stubs==1.16.1.1",
     "types-networkx>=3.5.0.20250728",
 ]
 
