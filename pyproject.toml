@@ -24,6 +24,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "black>=25.1.0",
+    "coverage>=7.10.4",
     "mypy>=1.17.1",
     "pandas-stubs==2.3.0.250703",
     "pre-commit>=4.2.0",
