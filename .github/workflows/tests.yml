@@ -1,0 +1,150 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { python: "3.11", os: "ubuntu-latest", session: "pre-commit" }
+          - { python: "3.11", os: "ubuntu-latest", session: "mypy" }
+          - { python: "3.12", os: "ubuntu-latest", session: "mypy" }
+          - { python: "3.13", os: "ubuntu-latest", session: "mypy" }
+          - { python: "3.11", os: "ubuntu-latest", session: "tests" }
+          - { python: "3.12", os: "ubuntu-latest", session: "tests" }
+          - { python: "3.13", os: "ubuntu-latest", session: "tests" }
+          - { python: "3.13", os: "windows-latest", session: "tests" }
+          - { python: "3.13", os: "macos-latest", session: "tests" }
+
+    env:
+      FORCE_COLOR: "1"
+      PRE_COMMIT_COLOR: "always"
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Get uv version from constraints
+        id: uv-version
+        shell: pwsh
+        run: |
+          $UV_VERSION = (Get-Content .github/workflows/constraints.txt | Where-Object { $_ -match '^uv==' } | ForEach-Object { ($_ -split '==')[1] })
+          echo "version=$UV_VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: ${{ matrix.python }}
+
+      - name: Compute pre-commit cache key
+        if: matrix.session == 'pre-commit'
+        id: pre-commit-cache
+        shell: python
+        run: |
+          import hashlib
+          import subprocess
+          import sys
+
+          python = "py{}.{}".format(*sys.version_info[:2])
+          payload = sys.version.encode() + sys.executable.encode()
+          digest = hashlib.sha256(payload).hexdigest()
+          result = "${{ runner.os }}-{}-{}-pre-commit".format(python, digest[:8])
+          cmd = f'echo "result={result}" >> $GITHUB_OUTPUT'
+          subprocess.run(cmd, shell=True)
+
+      - name: Restore pre-commit cache
+        uses: actions/cache@v4
+        if: matrix.session == 'pre-commit'
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ steps.pre-commit-cache.outputs.result }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ steps.pre-commit-cache.outputs.result }}-
+
+      - name: Run pre-commit
+        if: matrix.session == 'pre-commit'
+        run: |
+          uv run pre-commit run --all-files --hook-stage=manual --show-diff-on-failure
+
+      - name: Run tests
+        if: matrix.session == 'tests'
+        run: |
+          uv run coverage run --parallel -m pytest
+
+      - name: Upload coverage data
+        if: always() && matrix.session == 'tests'
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: coverage-data-${{ matrix.os }}-${{ matrix.python }}
+          path: ".coverage.*"
+          include-hidden-files: true
+
+      - name: Run mypy
+        if: matrix.session == 'mypy'
+        run: |
+          uv run mypy src tests
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Get uv version from constraints
+        id: uv-version
+        shell: pwsh
+        run: |
+          $UV_VERSION = (Get-Content .github/workflows/constraints.txt | Where-Object { $_ -match '^uv==' } | ForEach-Object { ($_ -split '==')[1] })
+          echo "version=$UV_VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: "3.11"
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+
+      - name: Combine coverage data and display human readable report
+        run: |
+          uv run coverage combine
+
+      - name: Create coverage report
+        run: |
+          uv run coverage report --skip-empty
+          uv run coverage xml
+
+      # Need to fix coverage source paths for SonarCloud scanning in GitHub actions.
+      # Replace root path with /github/workspace (mounted in docker container).
+      - name: Override coverage source paths for SonarCloud
+        run: |
+          sed -i "s/<source><\/source>/<source>\/home\/runner\/work\/tsp\/tsp<\/source>/g" coverage.xml
+          sed -i "s/<source>tests/<source>\/home\/runner\/work\/tsp\/tsp\/tests/g" coverage.xml
+
+      - name: SonarQube Cloud Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # No need to run SonarCloud analysis if dependabot update or token not defined
+        if: env.SONAR_TOKEN != '' && (github.actor != 'dependabot[bot]')
+        uses: SonarSource/sonarqube-scan-action@v5.3.0

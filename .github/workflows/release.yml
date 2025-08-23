@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get uv version from constraints
+        id: uv-version
+        shell: pwsh
+        run: |
+          $UV_VERSION = (Get-Content .github/workflows/constraints.txt | Where-Object { $_ -match '^uv==' } | ForEach-Object { ($_ -split '==')[1] })
+          echo "version=$UV_VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          version: ${{ steps.uv-version.outputs.version }}
+          python-version: "3.12"
+
+      - name: Check if there is a parent commit
+        id: check-parent-commit
+        run: |
+          echo "sha=$(git rev-parse --verify --quiet HEAD^)" >> $GITHUB_OUTPUT
+
+      - name: Detect and tag new version
+        id: check-version
+        if: steps.check-parent-commit.outputs.sha
+        uses: salsify/action-detect-and-tag-new-version@v2.0.3
+        with:
+          version-command: |
+            uv version --short
+
+      - name: Bump version for developmental release
+        if: (!steps.check-version.outputs.tag)
+        run: |
+          uv version --bump patch --frozen &&
+          version=$(uv version --short) &&
+          uv version $version.dev.$(date +%s) --no-sync
+
+      - name: Build package
+        run: |
+          uv build
+
+#      - name: Publish package on PyPI
+#        if: steps.check-version.outputs.tag
+#        uses: pypa/gh-action-pypi-publish@v1.12.4
+#
+#      - name: Publish package on TestPyPI
+#        if: (!steps.check-version.outputs.tag)
+#        uses: pypa/gh-action-pypi-publish@v1.12.4
+#        with:
+#          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish the release notes
+        uses: release-drafter/release-drafter@v6.1.0
+        with:
+          publish: ${{ steps.check-version.outputs.tag != '' }}
+          tag: ${{ steps.check-version.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
