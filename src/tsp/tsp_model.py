@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 import pyomo.environ as pyo
 
@@ -11,20 +13,22 @@ def valid_arc_filter(model: pyo.ConcreteModel, value: tuple[str, str]) -> bool:
 
 def total_cost(model: pyo.ConcreteModel) -> float:
     """Total cost for the tour."""
-    return pyo.summation(model.cost_ij, model.x_ij)
+    return float(pyo.summation(model.cost_ij, model.x_ij))
 
 
-def node_is_entered_once(model: pyo.ConcreteModel, j: str) -> bool:
+def node_is_entered_once(model: pyo.ConcreteModel, j: str) -> Any:
     """Each node j must be visited from exactly one other node."""
     return sum(model.x_ij[i, j] for i in model.nodes if i != j) == 1
 
 
-def node_is_exited_once(model: pyo.ConcreteModel, i: str) -> bool:
+def node_is_exited_once(model: pyo.ConcreteModel, i: str) -> Any:
     """Each node i must departure to exactly one other node."""
     return sum(model.x_ij[i, j] for j in model.nodes if j != i) == 1
 
 
-def path_is_single_tour(model: pyo.ConcreteModel, i: str, j: str) -> bool:
+def path_is_single_tour(
+    model: pyo.ConcreteModel, i: str, j: str
+) -> pyo.Constraint.Skip | Any:
     """For each pair of permanent nodes (i, j), if site j is visited from node i, the rank of j must be strictly greater than the rank of i."""
     if i == j:  # if node coincide, skip creating a constraint
         return pyo.Constraint.Skip

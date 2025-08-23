@@ -26,7 +26,7 @@ class TestEuclideanCalculator:
         pdt.assert_frame_equal(cost_matrix, df_xy1_facit_euclidian, check_exact=False)
         pdt.assert_frame_equal(cost_matrix, df_xy1_facit_euclidian.T, check_exact=False)
 
-    def test_euclidean_calculator_missing_coordinates_edge_case(self):
+    def test_euclidean_calculator_missing_coordinates_edge_case(self) -> None:
         # Arrange: DataFrame missing both x/y and lat/lon
         df = pd.DataFrame({"foo": [1, 2], "bar": [3, 4]})
         calculator = EuclideanCalculator()
@@ -38,7 +38,7 @@ class TestEuclideanCalculator:
         ):
             calculator.calculate_cost_matrix(df)
 
-    def test_euclidean_calculator_no_name_column(self):
+    def test_euclidean_calculator_no_name_column(self) -> None:
         # Arrange: DataFrame with x/y coordinates but no name column
         df = pd.DataFrame({"x": [0, 3, 0], "y": [0, 0, 4]})
         calculator = EuclideanCalculator()
@@ -57,7 +57,7 @@ class TestEuclideanCalculator:
 
 
 class TestGeodesicCalculator:
-    def test_geodesic_calculator_latlon_happy_path(self):
+    def test_geodesic_calculator_latlon_happy_path(self) -> None:
         # Arrange: DataFrame with lat/lon coordinates and names (Oslo, Stockholm, Copenhagen)
         df = pd.DataFrame(
             {
@@ -103,7 +103,7 @@ class TestGeodesicCalculator:
 
 
 class TestCostMatrixFactory:
-    def test_cost_matrix_factory_selection_happy_path(self):
+    def test_cost_matrix_factory_selection_happy_path(self) -> None:
         # Arrange: DataFrames for different coordinate systems
         df_xy = pd.DataFrame({"x": [0, 1], "y": [0, 1]})
         df_latlon = pd.DataFrame({"lat": [0, 1], "lon": [0, 1]})
@@ -134,7 +134,7 @@ class TestCostMatrixFactory:
 
 
 class TestGeodesicCalculatorEdge:
-    def test_geodesic_calculator_missing_latlon_edge_case(self):
+    def test_geodesic_calculator_missing_latlon_edge_case(self) -> None:
         # Arrange: DataFrame missing lat or lon
         df_missing_lat = pd.DataFrame({"lon": [10, 20]})
         df_missing_lon = pd.DataFrame({"lat": [50, 60]})
@@ -152,7 +152,7 @@ class TestGeodesicCalculatorEdge:
 
 
 class TestOpenRouteServiceCalculator:
-    def test_openrouteservice_calculator_not_implemented_edge_case(self):
+    def test_openrouteservice_calculator_not_implemented_edge_case(self) -> None:
         # Arrange: DataFrame with lat/lon
         df = pd.DataFrame({"lat": [0, 1], "lon": [0, 1]})
         calculator = OpenRouteServiceCalculator(api_key="dummy")
@@ -166,7 +166,7 @@ class TestOpenRouteServiceCalculator:
 
 
 class TestEuclideanCalculatorLatLonToUTM:
-    def test_euclidean_calculator_latlon_to_utm_happy_path(self):
+    def test_euclidean_calculator_latlon_to_utm_happy_path(self) -> None:
         # Arrange: DataFrame with only lat/lon columns (three cities forming a triangle)
         df = pd.DataFrame(
             {
@@ -187,9 +187,10 @@ class TestEuclideanCalculatorLatLonToUTM:
         np.testing.assert_allclose(np.diag(cost_matrix.values), 0)
         assert np.allclose(cost_matrix.values, cost_matrix.values.T)
         # Distances should be positive and nonzero off-diagonal
+        cm_float = cost_matrix.to_numpy(dtype=float)
         for i, j in itertools.product(range(3), range(3)):
             if i != j:
-                assert cost_matrix.iloc[i, j] > 0
+                assert cm_float[i, j] > 0
 
 
 class TestCalculateCostMatrixFunction:

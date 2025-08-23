@@ -1,12 +1,12 @@
 import pandas as pd
-import pandera.pandas as pa
 import pytest
+from pandera.errors import SchemaError
 
 from tsp.node_schema import CartesianNodeModel, GeographicNodeModel, NodeType
 
 
 # 1. All permanent nodes (valid)
-def test_geographic_schema_accepts_all_permanent():
+def test_geographic_schema_accepts_all_permanent() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "B", "C"],
@@ -19,7 +19,7 @@ def test_geographic_schema_accepts_all_permanent():
 
 
 # 2. One startend, rest permanent (valid)
-def test_geographic_schema_accepts_one_startend_rest_permanent():
+def test_geographic_schema_accepts_one_startend_rest_permanent() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "B", "C"],
@@ -32,7 +32,7 @@ def test_geographic_schema_accepts_one_startend_rest_permanent():
 
 
 # 3. Two starts (invalid)
-def test_geographic_schema_rejects_two_starts():
+def test_geographic_schema_rejects_two_starts() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "B", "C"],
@@ -45,12 +45,12 @@ def test_geographic_schema_rejects_two_starts():
             "lon": [10.0, 11.0, 12.0],
         }
     )
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(SchemaError):
         GeographicNodeModel.validate(df)
 
 
 # 4. One start, no end (invalid)
-def test_geographic_schema_rejects_one_start_no_end():
+def test_geographic_schema_rejects_one_start_no_end() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "B", "C"],
@@ -63,12 +63,12 @@ def test_geographic_schema_rejects_one_start_no_end():
             "lon": [10.0, 11.0, 12.0],
         }
     )
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(SchemaError):
         GeographicNodeModel.validate(df)
 
 
 # 5. One start, one end, rest permanent (valid)
-def test_geographic_schema_accepts_start_end_permanent():
+def test_geographic_schema_accepts_start_end_permanent() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "B", "C", "D"],
@@ -82,7 +82,7 @@ def test_geographic_schema_accepts_start_end_permanent():
 
 
 # 6. Unknown node type (invalid value)
-def test_geographic_schema_rejects_unknown_node_type():
+def test_geographic_schema_rejects_unknown_node_type() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "B", "C"],
@@ -91,12 +91,12 @@ def test_geographic_schema_rejects_unknown_node_type():
             "lon": [10, 11, 12],
         }
     )
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(SchemaError):
         GeographicNodeModel.validate(df)
 
 
 # 7. Duplicate names (unique constraint fail)
-def test_geographic_schema_enforces_unique_names():
+def test_geographic_schema_enforces_unique_names() -> None:
     df = pd.DataFrame(
         {
             "name": ["A", "A", "B"],
@@ -105,7 +105,7 @@ def test_geographic_schema_enforces_unique_names():
             "lon": [10.0, 11.0, 12.0],
         }
     )
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(SchemaError):
         GeographicNodeModel.validate(df)
 
 
@@ -113,27 +113,27 @@ def test_geographic_schema_enforces_unique_names():
 @pytest.mark.parametrize(
     "lat,lon",
     [
-        (100, 50),  # invalid lat
-        (-91, 100),  # invalid lat
-        (0, 181),  # invalid lon
-        (45, -181),  # invalid lon
+        (100.0, 50.0),  # invalid lat
+        (-91.0, 100.0),  # invalid lat
+        (0.0, 181.0),  # invalid lon
+        (45.0, -181.0),  # invalid lon
     ],
 )
-def test_geographic_schema_rejects_out_of_range_latlon(lat, lon):
+def test_geographic_schema_rejects_out_of_range_latlon(lat: float, lon: float) -> None:
     df = pd.DataFrame(
         {
             "name": ["A"],
             "node_type": [NodeType.PERMANENT.value],
-            "lat": [float(lat)],
-            "lon": [float(lon)],
+            "lat": [lat],
+            "lon": [lon],
         }
     )
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(SchemaError):
         GeographicNodeModel.validate(df)
 
 
 # 9. Minimal valid DataFrame (one node)
-def test_geographic_schema_succeeds_with_one_node():
+def test_geographic_schema_succeeds_with_one_node() -> None:
     df = pd.DataFrame(
         {
             "name": ["Node1"],
@@ -170,7 +170,13 @@ def test_geographic_schema_succeeds_with_one_node():
         ),
     ],
 )
-def test_cartesian_schema_configurations(names, node_types, xs, ys, should_pass):
+def test_cartesian_schema_configurations(
+    names: list[str],
+    node_types: list[str],
+    xs: list[int],
+    ys: list[int],
+    should_pass: bool,
+) -> None:
     df = pd.DataFrame(
         {
             "name": names,
@@ -182,5 +188,5 @@ def test_cartesian_schema_configurations(names, node_types, xs, ys, should_pass)
     if should_pass:
         CartesianNodeModel.validate(df)
     else:
-        with pytest.raises(pa.errors.SchemaError):
+        with pytest.raises(SchemaError):
             CartesianNodeModel.validate(df)

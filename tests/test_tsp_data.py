@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -11,7 +13,7 @@ from tsp.tsp_data import (
 
 
 class TestTspDataFactories:
-    def test_from_dataframe_geographic_happy_path(self):
+    def test_from_dataframe_geographic_happy_path(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
@@ -34,7 +36,7 @@ class TestTspDataFactories:
         assert data.coordinate_system == CoordinateSystem.GEOGRAPHIC
         assert list(data.df.columns) == ["name", "node_type", "lat", "lon"]
 
-    def test_from_dataframe_cartesian_happy_path(self):
+    def test_from_dataframe_cartesian_happy_path(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
@@ -57,7 +59,7 @@ class TestTspDataFactories:
         assert data.coordinate_system == CoordinateSystem.CARTESIAN
         assert list(data.df.columns) == ["name", "node_type", "x", "y"]
 
-    def test_from_dataframe_prefers_geographic_when_both_present(self):
+    def test_from_dataframe_prefers_geographic_when_both_present(self) -> None:
         # Arrange: Contains both lat/lon and x/y -> should prefer Geographic
         df = pd.DataFrame(
             {
@@ -77,7 +79,7 @@ class TestTspDataFactories:
         assert isinstance(data, GeographicTspData)
         assert data.coordinate_system == CoordinateSystem.GEOGRAPHIC
 
-    def test_from_dataframe_missing_coordinates_raises_value_error(self):
+    def test_from_dataframe_missing_coordinates_raises_value_error(self) -> None:
         # Arrange: Missing both lat/lon and x/y
         df = pd.DataFrame(
             {
@@ -90,7 +92,7 @@ class TestTspDataFactories:
         with pytest.raises(ValueError, match="either lat/lon or x/y coordinates"):
             TspData.from_dataframe(df)
 
-    def test_from_csv_cartesian_happy_path(self, tmp_path: pytest.TempPathFactory):
+    def test_from_csv_cartesian_happy_path(self, tmp_path: Path) -> None:
         # Arrange: Write a simple cartesian CSV
         df = pd.DataFrame(
             {
@@ -116,7 +118,7 @@ class TestTspDataFactories:
 
 
 class TestTspDataBehaviors:
-    def test_get_start_node_name_startend_present(self):
+    def test_get_start_node_name_startend_present(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
@@ -138,7 +140,7 @@ class TestTspDataBehaviors:
         # Assert
         assert start_name == "Depot"
 
-    def test_get_start_node_name_start_and_end_present(self):
+    def test_get_start_node_name_start_and_end_present(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
@@ -160,7 +162,7 @@ class TestTspDataBehaviors:
         # Assert
         assert start_name == "S"
 
-    def test_get_start_node_name_only_permanent_returns_first(self):
+    def test_get_start_node_name_only_permanent_returns_first(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
@@ -178,7 +180,7 @@ class TestTspDataBehaviors:
         # Assert
         assert start_name == "A"
 
-    def test_get_start_and_permanent_nodes_filtering(self):
+    def test_get_start_and_permanent_nodes_filtering(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
@@ -203,7 +205,7 @@ class TestTspDataBehaviors:
         assert list(start_nodes["name"]) == ["S"]
         assert list(permanent_nodes["name"]) == ["C1", "C2"]
 
-    def test_len_and_repr(self):
+    def test_len_and_repr(self) -> None:
         # Arrange
         df = pd.DataFrame(
             {
