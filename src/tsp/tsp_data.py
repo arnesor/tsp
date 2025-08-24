@@ -107,6 +107,100 @@ class TspData(ABC):
                 f"Found columns: {list(df.columns)}"
             )
 
+    @classmethod
+    def from_tsplib(cls, filepath: Path) -> TspData:
+        """Factory method to create TspData from a TSPLIB file.
+
+        Args:
+            filepath: Path to the TSPLIB file
+
+        Returns:
+            TspData instance with parsed node data
+
+        Raises:
+            ValueError: If file format is invalid or unsupported
+            FileNotFoundError: If the specified file doesn't exist
+        """
+        if not filepath.exists():
+            raise FileNotFoundError(f"TSPLIB file not found: {filepath}")
+
+        # Parse the TSPLIB file
+        nodes_data = []
+        depot_nodes = []
+        in_coord_section = False
+        in_depot_section = False
+
+        with open(filepath) as file:
+            for line in file:
+                line = line.strip()
+
+                # Skip empty lines
+                if not line:
+                    continue
+
+                # Check for section starts
+                if line == "NODE_COORD_SECTION":
+                    in_coord_section = True
+                    in_depot_section = False
+                    continue
+                elif line == "DEPOT_SECTION":
+                    in_coord_section = False
+                    in_depot_section = True
+                    continue
+
+                # Check for end of file
+                if line == "EOF":
+                    break
+
+                # Parse coordinate data
+                if in_coord_section:
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        try:
+                            node_id = parts[0]
+                            x_coord = float(parts[1])
+                            y_coord = float(parts[2])
+
+                            # Create node data - assume all nodes are permanent initially
+                            nodes_data.append(
+                                {
+                                    "name": node_id,
+                                    "node_type": "permanent",
+                                    "x": x_coord,
+                                    "y": y_coord,
+                                }
+                            )
+                        except (ValueError, IndexError) as e:
+                            raise ValueError(
+                                f"Invalid coordinate data in line: {line}"
+                            ) from e
+
+                # Parse depot data
+                elif in_depot_section:
+                    # Depot section contains depot node IDs terminated by -1
+                    if line == "-1":
+                        break
+                    try:
+                        depot_id = line.strip()
+                        depot_nodes.append(depot_id)
+                    except ValueError as e:
+                        raise ValueError(f"Invalid depot data in line: {line}") from e
+
+        if not nodes_data:
+            raise ValueError("No coordinate data found in TSPLIB file")
+
+        # Update the first depot node to have startend type
+        if depot_nodes:
+            first_depot = depot_nodes[0]
+            for node in nodes_data:
+                if node["name"] == first_depot:
+                    node["node_type"] = "startend"
+                    break
+
+        # Create DataFrame and return CartesianTspData
+        df = pd.DataFrame(nodes_data)
+        return CartesianTspData(df)
+
     @staticmethod
     def _has_geographic_coords(df: pd.DataFrame) -> bool:
         """Check if DataFrame has geographic coordinates."""

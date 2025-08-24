@@ -33,7 +33,7 @@ class TestTspModel:
         assert len(model.cost_ij) == len(model.valid_arcs)
 
         # No self loops in valid_arcs
-        for (i, j) in model.valid_arcs:
+        for i, j in model.valid_arcs:
             assert i != j
 
     def test_nodes_except_startend_and_rank_bounds(self) -> None:
@@ -147,5 +147,5 @@ class TestTspModel:
         model = create_tsp_model(cm, startend_name="A")
 
         # Assert
-        for (i, j) in model.valid_arcs:
+        for i, j in model.valid_arcs:
             assert i != j
