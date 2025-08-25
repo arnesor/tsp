@@ -11,6 +11,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
+import networkx as nx
 import pandas as pd
 
 from .node_schema import CartesianNodeModel, GeographicNodeModel
@@ -295,3 +296,28 @@ class CartesianTspData(TspData):
     def _get_coordinate_system(self) -> CoordinateSystem:
         """Get coordinate system type."""
         return CoordinateSystem.CARTESIAN
+
+    def to_graph(self) -> nx.Graph:
+        """Convert the CartesianTspData to a networkx Graph.
+
+        The graph contains only nodes with the following attributes:
+        - x: x coordinate
+        - y: y coordinate
+        - name: node name
+        - node_type: type of node (permanent, start, end, startend)
+
+        Returns:
+            nx.Graph: A networkx graph with nodes containing position and metadata
+        """
+        graph = nx.Graph()
+
+        for _, row in self._df.iterrows():
+            graph.add_node(
+                row["name"],
+                x=row["x"],
+                y=row["y"],
+                name=row["name"],
+                node_type=row["node_type"],
+            )
+
+        return graph
