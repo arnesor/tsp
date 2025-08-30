@@ -261,6 +261,10 @@ class TspData(ABC):
             else self.get_node_names()[0]
         )
 
+    @abstractmethod
+    def to_graph(self) -> nx.Graph:
+        """Convert the TspData to a networkx Graph."""
+
     def __len__(self) -> int:
         """Get number of nodes."""
         return len(self._df)
@@ -285,6 +289,20 @@ class GeographicTspData(TspData):
         """Get coordinate system type."""
         return CoordinateSystem.GEOGRAPHIC
 
+    def to_graph(self) -> nx.Graph:
+        """Convert the GeographicTspData to a networkx Graph.
+
+        Returns:
+            nx.Graph: A networkx graph with nodes containing position and metadata
+        """
+        graph = nx.Graph()
+        for _, row in self._df.iterrows():
+            pos = (row["lat"], row["lon"])
+            graph.add_node(
+                row["name"], pos=pos, name=row["name"], node_type=row["node_type"]
+            )
+        return graph
+
 
 class CartesianTspData(TspData):
     """TSP data with Cartesian coordinates (x/y)."""
@@ -300,24 +318,13 @@ class CartesianTspData(TspData):
     def to_graph(self) -> nx.Graph:
         """Convert the CartesianTspData to a networkx Graph.
 
-        The graph contains only nodes with the following attributes:
-        - x: x coordinate
-        - y: y coordinate
-        - name: node name
-        - node_type: type of node (permanent, start, end, startend)
-
         Returns:
             nx.Graph: A networkx graph with nodes containing position and metadata
         """
         graph = nx.Graph()
-
         for _, row in self._df.iterrows():
+            pos = (row["x"], row["y"])
             graph.add_node(
-                row["name"],
-                x=row["x"],
-                y=row["y"],
-                name=row["name"],
-                node_type=row["node_type"],
+                row["name"], pos=pos, name=row["name"], node_type=row["node_type"]
             )
-
         return graph
