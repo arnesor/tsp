@@ -118,19 +118,22 @@ def main() -> None:
             hovermode="closest",
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            plot_bgcolor="rgba(0,0,0,0)",  # Transparent background to adapt to theme
-            paper_bgcolor="rgba(0,0,0,0)",  # Transparent paper background
             autosize=True,
         ),
     )
 
-    # Save the plot as HTML file with scroll zoom enabled
+    # Save the plot as HTML file with scroll zoom enabled and removed toolbar buttons
     html_filename = Path(__file__).parent / "tsp_nodes_visualization2.html"
-    fig.write_html(html_filename, config={"scrollZoom": True})
+    config = {
+        "scrollZoom": True,
+        "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"],
+        "displaylogo": False,
+    }
+    fig.write_html(html_filename, config=config)
     print(f"Plot saved as: {html_filename}")
 
-    # Show the plot with scroll zoom enabled
-    fig.show(config={"scrollZoom": True})
+    # Show the plot with scroll zoom enabled and removed toolbar buttons
+    fig.show(config=config)
 
 
 if __name__ == "__main__":
