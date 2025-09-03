@@ -4,6 +4,7 @@ This module provides classes for managing TSP data with proper validation
 and support for different coordinate systems (geographic and Cartesian).
 """
 
+# TODO: Should switch to python 3.12 and use @override decorator
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -262,8 +263,12 @@ class TspData(ABC):
         )
 
     @abstractmethod
-    def to_graph(self) -> nx.Graph:
-        """Convert the TspData to a networkx Graph."""
+    def to_graph(self, reverse_positions: bool = False) -> nx.Graph:
+        """Convert the TspData to a networkx Graph.
+
+        Args:
+            reverse_positions: If True, reverse the x/y or lat/lon coordinates in the graph
+        """
 
     def __len__(self) -> int:
         """Get number of nodes."""
@@ -289,15 +294,22 @@ class GeographicTspData(TspData):
         """Get coordinate system type."""
         return CoordinateSystem.GEOGRAPHIC
 
-    def to_graph(self) -> nx.Graph:
+    def to_graph(self, reverse_positions: bool = False) -> nx.Graph:
         """Convert the GeographicTspData to a networkx Graph.
+
+        Args:
+            reverse_positions: If True, reverse the x/y or lat/lon coordinates in the graph
 
         Returns:
             nx.Graph: A networkx graph with nodes containing position and metadata
         """
         graph = nx.Graph()
         for _, row in self._df.iterrows():
-            pos = (row["lat"], row["lon"])
+            pos = (
+                (row["lon"], row["lat"])
+                if reverse_positions
+                else (row["lat"], row["lon"])
+            )
             graph.add_node(
                 row["name"], pos=pos, name=row["name"], node_type=row["node_type"]
             )
@@ -315,15 +327,18 @@ class CartesianTspData(TspData):
         """Get coordinate system type."""
         return CoordinateSystem.CARTESIAN
 
-    def to_graph(self) -> nx.Graph:
+    def to_graph(self, reverse_positions: bool = False) -> nx.Graph:
         """Convert the CartesianTspData to a networkx Graph.
+
+        Args:
+            reverse_positions: If True, reverse the x/y or lat/lon coordinates in the graph
 
         Returns:
             nx.Graph: A networkx graph with nodes containing position and metadata
         """
         graph = nx.Graph()
         for _, row in self._df.iterrows():
-            pos = (row["x"], row["y"])
+            pos = (row["y"], row["x"]) if reverse_positions else (row["x"], row["y"])
             graph.add_node(
                 row["name"], pos=pos, name=row["name"], node_type=row["node_type"]
             )
