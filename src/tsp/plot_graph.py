@@ -27,6 +27,36 @@ def get_node_colors(graph: nx.Graph) -> list[str]:
     return [colorway[i % len(colorway)] for i in node_color_indices]
 
 
+def get_hover_text(graph: nx.Graph) -> list[str]:
+    """Returns a list of hover text strings for each node.
+
+    Args:
+        graph: NetworkX graph with node attributes
+
+    Returns:
+        List of formatted hover text strings for each node
+    """
+    # Get attribute dictionaries using NetworkX's proper API
+    names = nx.get_node_attributes(graph, "name")
+    node_types = nx.get_node_attributes(graph, "node_type")
+    positions = nx.get_node_attributes(graph, "pos")
+
+    hover_texts = []
+    for node in graph.nodes():
+        # Safely get attributes with defaults
+        name = names.get(node, "noname")
+        node_type = node_types.get(node, "unknown")
+        pos = positions.get(node, (0, 0))
+
+        hover_info = (
+            f"<b>{name}</b><br>"
+            f"Type: {node_type}<br>"
+            f"Position: ({pos[0]:.0f}, {pos[1]:.0f})"
+        )
+        hover_texts.append(hover_info)
+    return hover_texts
+
+
 def plot(graph: nx.Graph, file: Path | None = None) -> None:
     """Plots a graph using Plotly.
 
@@ -41,25 +71,37 @@ def plot(graph: nx.Graph, file: Path | None = None) -> None:
     pio.templates.default = "plotly"
 
     required_attributes = ["pos", "name", "node_type"]
+
+    # Check that all nodes have required attributes
     for attr in required_attributes:
-        if not nx.get_node_attributes(graph, attr):
-            raise ValueError(f"Graph nodes must have '{attr}' attribute")
+        attr_dict = nx.get_node_attributes(graph, attr)
+        missing_nodes = [node for node in graph.nodes() if node not in attr_dict]
+        if missing_nodes:
+            raise ValueError(
+                f"Nodes {missing_nodes} are missing required attribute '{attr}'"
+            )
 
     pos = nx.get_node_attributes(graph, "pos")
-    node_names = nx.get_node_attributes(graph, "name")
+    names = nx.get_node_attributes(graph, "name")
 
     # Create node traces for plotly
     node_x = [pos[node][0] for node in graph.nodes()]
     node_y = [pos[node][1] for node in graph.nodes()]
     node_colors = get_node_colors(graph)
+    hover_texts = get_hover_text(graph)
+
+    # Use node names for display text when available, fallback to node IDs
+    display_texts = [names.get(node, str(node)) for node in graph.nodes()]
 
     node_trace = go.Scatter(
         x=node_x,
         y=node_y,
         mode="markers+text",
-        text=list(graph.nodes()),
+        text=display_texts,
         marker=dict(color=node_colors),
         textposition="top center",
+        hoverinfo="text",
+        hovertext=hover_texts,
     )
 
     # Create edge traces for plotly
@@ -72,10 +114,7 @@ def plot(graph: nx.Graph, file: Path | None = None) -> None:
         edge_y.extend([y0, y1, None])
 
     edge_trace = go.Scatter(
-        x=edge_x,
-        y=edge_y,
-        mode="lines",
-        hoverinfo="skip",
+        x=edge_x, y=edge_y, mode="lines", hoverinfo="skip", name="TSP Route"
     )
 
     config = {
