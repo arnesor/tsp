@@ -57,11 +57,12 @@ def get_hover_text(graph: nx.Graph) -> list[str]:
     return hover_texts
 
 
-def plot(graph: nx.Graph, file: Path | None = None) -> None:
+def plot(graph: nx.Graph, title: str | None = None, file: Path | None = None) -> None:
     """Plots a graph using Plotly.
 
     Args:
         graph: NetworkX graph with required node attributes: pos, name, and node_type
+        title: Optional plot title
         file: Optional path to save the plot
 
     Raises:
@@ -75,8 +76,7 @@ def plot(graph: nx.Graph, file: Path | None = None) -> None:
     # Check that all nodes have required attributes
     for attr in required_attributes:
         attr_dict = nx.get_node_attributes(graph, attr)
-        missing_nodes = [node for node in graph.nodes() if node not in attr_dict]
-        if missing_nodes:
+        if missing_nodes := [node for node in graph.nodes() if node not in attr_dict]:
             raise ValueError(
                 f"Nodes {missing_nodes} are missing required attribute '{attr}'"
             )
@@ -123,13 +123,18 @@ def plot(graph: nx.Graph, file: Path | None = None) -> None:
         "displaylogo": False,
     }
 
+    # Prepare layout and include title only if provided
+    layout_kwargs = dict(
+        showlegend=False,
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        autosize=True,
+    )
+    if title is not None:
+        layout_kwargs["title"] = title
+
     fig = go.Figure(
         data=[node_trace, edge_trace],
-        layout=go.Layout(
-            showlegend=False,
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            autosize=True,
-        ),
+        layout=go.Layout(**layout_kwargs),
     )
     fig.show(config=config)
