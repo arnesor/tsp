@@ -132,7 +132,7 @@ class TspData(ABC):
         in_coord_section = False
         in_depot_section = False
 
-        with open(filepath) as file:
+        with open(filepath, encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
 
@@ -303,7 +303,7 @@ class GeographicTspData(TspData):
         Returns:
             nx.Graph: A networkx graph with nodes containing position and metadata
         """
-        graph = nx.Graph()
+        graph: nx.Graph = nx.Graph()
         for _, row in self._df.iterrows():
             pos = (
                 (row["lon"], row["lat"])
@@ -336,7 +336,7 @@ class CartesianTspData(TspData):
         Returns:
             nx.Graph: A networkx graph with nodes containing position and metadata
         """
-        graph = nx.Graph()
+        graph: nx.Graph = nx.Graph()
         for _, row in self._df.iterrows():
             pos = (row["y"], row["x"]) if reverse_positions else (row["x"], row["y"])
             graph.add_node(

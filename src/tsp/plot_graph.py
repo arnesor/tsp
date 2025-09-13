@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import networkx as nx
 import plotly.express as px
@@ -17,9 +18,9 @@ def get_node_colors(graph: nx.Graph) -> list[str]:
     }
     default_idx = 0
 
-    node_types = nx.get_node_attributes(graph, "node_type")
+    node_types: dict[str, str] = nx.get_node_attributes(graph, "node_type")
     node_color_indices = [
-        color_map.get(node_types.get(n), default_idx) for n in graph.nodes()
+        color_map.get(node_types[n], default_idx) for n in graph.nodes()
     ]
 
     tpl_name = pio.templates.default
@@ -124,7 +125,7 @@ def plot(graph: nx.Graph, title: str | None = None, file: Path | None = None) ->
     }
 
     # Prepare layout and include title only if provided
-    layout_kwargs = dict(
+    layout_kwargs: dict[str, Any] = dict(
         showlegend=False,
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),

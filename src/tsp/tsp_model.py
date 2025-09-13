@@ -95,25 +95,25 @@ def create_tsp_model(
 
     # Objective function
 
-    @model.Objective(sense=pyo.minimize, doc="Total cost for the tour.")
-    def total_cost(m: pyo.ConcreteModel) -> float:
+    @model.Objective(sense=pyo.minimize, doc="Total cost for the tour.")  # type: ignore[misc]
+    def total_cost(m: pyo.ConcreteModel) -> pyo.Expression:
         return pyo.summation(m.cost_ij, m.x_ij)
 
     # Constraints
 
-    @model.Constraint(model.nodes)
+    @model.Constraint(model.nodes)  # type: ignore[misc]
     def node_is_entered_once(m: pyo.ConcreteModel, j: str) -> Any:
         """Each node j must be visited from exactly one other node."""
         return sum(m.x_ij[i, j] for i in m.nodes if i != j) == 1
 
-    @model.Constraint(model.nodes)
+    @model.Constraint(model.nodes)  # type: ignore[misc]
     def node_is_exited_once(m: pyo.ConcreteModel, i: str) -> Any:
         """Each node i must depart to exactly one other node."""
         return sum(m.x_ij[i, j] for j in m.nodes if j != i) == 1
 
     # Subtour elimination
 
-    @model.Constraint(model.nodes_except_startend, model.nodes_except_startend)
+    @model.Constraint(model.nodes_except_startend, model.nodes_except_startend)  # type: ignore[misc]
     def path_is_single_tour(
         m: pyo.ConcreteModel, i: str, j: str
     ) -> pyo.Constraint.Skip | Any:
