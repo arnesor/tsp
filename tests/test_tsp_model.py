@@ -10,7 +10,7 @@ def _simple_cost_matrix(names: list[str]) -> pd.DataFrame:
     n = len(names)
     data: list[list[float]] = []
     for i in range(n):
-        row = []
+        row: list[float] = []
         row.extend(0.0 if i == j else float(i + j + 1) for j in range(n))
         data.append(row)
     return pd.DataFrame(data, index=names, columns=names)

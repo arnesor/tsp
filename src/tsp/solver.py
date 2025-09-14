@@ -4,8 +4,8 @@ from typing import NotRequired, TypedDict
 
 import pyomo.environ as pyo
 import pyomo.version
-from pyomo.contrib.solver.common.factory import SolverFactory
 from pyomo.contrib.solver.common.base import SolverBase
+from pyomo.contrib.solver.common.factory import SolverFactory
 from pyomo.contrib.solver.common.results import Results
 
 
