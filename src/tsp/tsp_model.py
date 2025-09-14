@@ -4,46 +4,10 @@ import pandas as pd
 import pyomo.environ as pyo
 
 
-def valid_arc_filter(model: pyo.ConcreteModel, value: tuple[str, str]) -> bool:
-    """All possible arcs connecting the sites (A)."""
-    # only create pair (i, j) if site i and site j are different
-    i, j = value  # Unpack the value tuple
-    return i != j
-
-
-def total_cost(model: pyo.ConcreteModel) -> float:
-    """Total cost for the tour."""
-    return float(pyo.summation(model.cost_ij, model.x_ij))
-
-
-def node_is_entered_once(model: pyo.ConcreteModel, j: str) -> Any:
-    """Each node j must be visited from exactly one other node."""
-    return sum(model.x_ij[i, j] for i in model.nodes if i != j) == 1
-
-
-def node_is_exited_once(model: pyo.ConcreteModel, i: str) -> Any:
-    """Each node i must departure to exactly one other node."""
-    return sum(model.x_ij[i, j] for j in model.nodes if j != i) == 1
-
-
-def path_is_single_tour(
-    model: pyo.ConcreteModel, i: str, j: str
-) -> pyo.Constraint.Skip | Any:
-    """For each pair of permanent nodes (i, j), if site j is visited from node i, the rank of j must be strictly greater than the rank of i."""
-    if i == j:  # if node coincide, skip creating a constraint
-        return pyo.Constraint.Skip
-
-    r_i = model.rank_i[i]
-    r_j = model.rank_i[j]
-    x_ij = model.x_ij[i, j]
-    # Standard MTZ form: r_j >= r_i + 1 - M * (1 - x_ij), with M = |S*|
-    return r_j >= r_i + 1 - model.M * (1 - x_ij)
-
-
 def create_tsp_model(
     cost_matrix: pd.DataFrame, startend_name: str | None = None
 ) -> pyo.ConcreteModel:
-    """Creates a Traveling Salesman Problem (TSP) model using Pyomo.
+    """Creates a Travelling Salesman Problem (TSP) model using Pyomo.
 
     This function generates a ConcreteModel instance for the TSP based
     on the provided cost matrix.
@@ -81,12 +45,17 @@ def create_tsp_model(
         doc="Nodes of interest, i.e., all nodes except the startend node (S*)",
     )
 
+    def valid_arc_filter(model: pyo.ConcreteModel, value: tuple[str, str]) -> bool:
+        """All possible arcs connecting the sites (A)."""
+        # only create pair (i, j) if site i and site j are different
+        i, j = value  # Unpack the value tuple
+        return i != j
+
     model.valid_arcs = pyo.Set(
         initialize=model.nodes * model.nodes,  # S * S
         filter=valid_arc_filter,
         doc=valid_arc_filter.__doc__,
     )
-    # (Avoid pprint in library code)
 
     # Parameters
 
@@ -102,7 +71,6 @@ def create_tsp_model(
         initialize=costs_init,
         doc="Cost between node i and node j (Cij).",
     )
-    # model.cost_ij.pprint()
 
     # Use standard MTZ big-M: M = |S*|
     model.M = pyo.Param(
@@ -127,30 +95,36 @@ def create_tsp_model(
 
     # Objective function
 
-    model.obj_total_cost = pyo.Objective(
-        rule=total_cost,
-        sense=pyo.minimize,
-        doc=total_cost.__doc__,
-    )
+    @model.Objective(sense=pyo.minimize, doc="Total cost for the tour.")  # type: ignore[misc]
+    def total_cost(m: pyo.ConcreteModel) -> pyo.Expression:
+        return pyo.summation(m.cost_ij, m.x_ij)
 
     # Constraints
 
-    model.constr_each_site_is_entered_once = pyo.Constraint(
-        model.nodes, rule=node_is_entered_once, doc=node_is_entered_once.__doc__
-    )
-    model.constr_each_site_is_exited_once = pyo.Constraint(
-        model.nodes, rule=node_is_exited_once, doc=node_is_exited_once.__doc__
-    )
+    @model.Constraint(model.nodes)  # type: ignore[misc]
+    def node_is_entered_once(m: pyo.ConcreteModel, j: str) -> Any:
+        """Each node j must be visited from exactly one other node."""
+        return sum(m.x_ij[i, j] for i in m.nodes if i != j) == 1
+
+    @model.Constraint(model.nodes)  # type: ignore[misc]
+    def node_is_exited_once(m: pyo.ConcreteModel, i: str) -> Any:
+        """Each node i must depart to exactly one other node."""
+        return sum(m.x_ij[i, j] for j in m.nodes if j != i) == 1
 
     # Subtour elimination
 
-    # cross product of permanent nodes, to index the constraint
-    permanent_node_pairs = model.nodes_except_startend * model.nodes_except_startend
+    @model.Constraint(model.nodes_except_startend, model.nodes_except_startend)  # type: ignore[misc]
+    def path_is_single_tour(
+        m: pyo.ConcreteModel, i: str, j: str
+    ) -> pyo.Constraint.Skip | Any:
+        """For each pair of permanent nodes (i, j), if site j is visited from node i, the rank of j must be strictly greater than the rank of i."""
+        if i == j:  # if node coincide, skip creating a constraint
+            return pyo.Constraint.Skip
 
-    model.constr_path_is_single_tour = pyo.Constraint(
-        permanent_node_pairs, rule=path_is_single_tour, doc=path_is_single_tour.__doc__
-    )
-    # (Avoid pprint in library code)
-    # model.pprint()
+        r_i = m.rank_i[i]
+        r_j = m.rank_i[j]
+        x_ij = m.x_ij[i, j]
+        # Standard MTZ form: r_j >= r_i + 1 - M * (1 - x_ij), with M = |S*|
+        return r_j >= r_i + 1 - m.M * (1 - x_ij)
 
     return model

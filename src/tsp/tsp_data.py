@@ -4,6 +4,7 @@ This module provides classes for managing TSP data with proper validation
 and support for different coordinate systems (geographic and Cartesian).
 """
 
+# TODO: Should switch to python 3.12 and use @override decorator
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -11,6 +12,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
+import networkx as nx
 import pandas as pd
 
 from .node_schema import CartesianNodeModel, GeographicNodeModel
@@ -107,6 +109,100 @@ class TspData(ABC):
                 f"Found columns: {list(df.columns)}"
             )
 
+    @classmethod
+    def from_tsplib(cls, filepath: Path) -> TspData:
+        """Factory method to create TspData from a TSPLIB file.
+
+        Args:
+            filepath: Path to the TSPLIB file
+
+        Returns:
+            TspData instance with parsed node data
+
+        Raises:
+            ValueError: If file format is invalid or unsupported
+            FileNotFoundError: If the specified file doesn't exist
+        """
+        if not filepath.exists():
+            raise FileNotFoundError(f"TSPLIB file not found: {filepath}")
+
+        # Parse the TSPLIB file
+        nodes_data = []
+        depot_nodes = []
+        in_coord_section = False
+        in_depot_section = False
+
+        with open(filepath, encoding="utf-8") as file:
+            for line in file:
+                line = line.strip()
+
+                # Skip empty lines
+                if not line:
+                    continue
+
+                # Check for section starts
+                if line == "NODE_COORD_SECTION":
+                    in_coord_section = True
+                    in_depot_section = False
+                    continue
+                elif line == "DEPOT_SECTION":
+                    in_coord_section = False
+                    in_depot_section = True
+                    continue
+
+                # Check for end of file
+                if line == "EOF":
+                    break
+
+                # Parse coordinate data
+                if in_coord_section:
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        try:
+                            node_id = parts[0]
+                            x_coord = float(parts[1])
+                            y_coord = float(parts[2])
+
+                            # Create node data - assume all nodes are permanent initially
+                            nodes_data.append(
+                                {
+                                    "name": node_id,
+                                    "node_type": "permanent",
+                                    "x": x_coord,
+                                    "y": y_coord,
+                                }
+                            )
+                        except (ValueError, IndexError) as e:
+                            raise ValueError(
+                                f"Invalid coordinate data in line: {line}"
+                            ) from e
+
+                # Parse depot data
+                elif in_depot_section:
+                    # Depot section contains depot node IDs terminated by -1
+                    if line == "-1":
+                        break
+                    try:
+                        depot_id = line.strip()
+                        depot_nodes.append(depot_id)
+                    except ValueError as e:
+                        raise ValueError(f"Invalid depot data in line: {line}") from e
+
+        if not nodes_data:
+            raise ValueError("No coordinate data found in TSPLIB file")
+
+        # Update the first depot node to have startend type
+        if depot_nodes:
+            first_depot = depot_nodes[0]
+            for node in nodes_data:
+                if node["name"] == first_depot:
+                    node["node_type"] = "startend"
+                    break
+
+        # Create DataFrame and return CartesianTspData
+        df = pd.DataFrame(nodes_data)
+        return CartesianTspData(df)
+
     @staticmethod
     def _has_geographic_coords(df: pd.DataFrame) -> bool:
         """Check if DataFrame has geographic coordinates."""
@@ -166,6 +262,14 @@ class TspData(ABC):
             else self.get_node_names()[0]
         )
 
+    @abstractmethod
+    def to_graph(self, reverse_positions: bool = False) -> nx.Graph:
+        """Convert the TspData to a networkx Graph.
+
+        Args:
+            reverse_positions: If True, reverse the x/y or lat/lon coordinates in the graph
+        """
+
     def __len__(self) -> int:
         """Get number of nodes."""
         return len(self._df)
@@ -190,6 +294,27 @@ class GeographicTspData(TspData):
         """Get coordinate system type."""
         return CoordinateSystem.GEOGRAPHIC
 
+    def to_graph(self, reverse_positions: bool = False) -> nx.Graph:
+        """Convert the GeographicTspData to a networkx Graph.
+
+        Args:
+            reverse_positions: If True, reverse the x/y or lat/lon coordinates in the graph
+
+        Returns:
+            nx.Graph: A networkx graph with nodes containing position and metadata
+        """
+        graph: nx.Graph = nx.Graph()
+        for _, row in self._df.iterrows():
+            pos = (
+                (row["lon"], row["lat"])
+                if reverse_positions
+                else (row["lat"], row["lon"])
+            )
+            graph.add_node(
+                row["name"], pos=pos, name=row["name"], node_type=row["node_type"]
+            )
+        return graph
+
 
 class CartesianTspData(TspData):
     """TSP data with Cartesian coordinates (x/y)."""
@@ -201,3 +326,20 @@ class CartesianTspData(TspData):
     def _get_coordinate_system(self) -> CoordinateSystem:
         """Get coordinate system type."""
         return CoordinateSystem.CARTESIAN
+
+    def to_graph(self, reverse_positions: bool = False) -> nx.Graph:
+        """Convert the CartesianTspData to a networkx Graph.
+
+        Args:
+            reverse_positions: If True, reverse the x/y or lat/lon coordinates in the graph
+
+        Returns:
+            nx.Graph: A networkx graph with nodes containing position and metadata
+        """
+        graph: nx.Graph = nx.Graph()
+        for _, row in self._df.iterrows():
+            pos = (row["y"], row["x"]) if reverse_positions else (row["x"], row["y"])
+            graph.add_node(
+                row["name"], pos=pos, name=row["name"], node_type=row["node_type"]
+            )
+        return graph
