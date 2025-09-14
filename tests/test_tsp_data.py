@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import networkx as nx
 import pandas as pd
 import pytest
 
@@ -225,3 +226,103 @@ class TestTspDataBehaviors:
         assert n == 2
         assert "GeographicTspData(" in r
         assert "coordinate_system=geographic" in r
+
+
+class TestTspDataToGraph:
+    def test_to_graph_basic(self) -> None:
+        # Arrange
+        df = pd.DataFrame(
+            {
+                "name": ["A", "B", "C", "D"],
+                "node_type": ["startend", "permanent", "permanent", "permanent"],
+                "x": [0.0, 1.0, 2.0, 3.0],
+                "y": [0.0, 1.0, 2.0, 3.0],
+            }
+        )
+        data = CartesianTspData(df)
+
+        # Act
+        graph = data.to_graph()
+
+        # Assert
+        assert isinstance(graph, nx.Graph), f"Expected nx.Graph, got {type(graph)}"
+        assert len(graph.nodes) == 4, f"Expected 4 nodes, got {len(graph.nodes)}"
+        assert len(graph.edges) == 0, f"Expected 0 edges, got {len(graph.edges)}"
+
+    def test_to_graph_node_attributes(self) -> None:
+        # Arrange
+        df = pd.DataFrame(
+            {
+                "name": ["NodeA", "NodeB"],
+                "node_type": ["startend", "permanent"],
+                "x": [10.5, 20.7],
+                "y": [30.2, 40.8],
+            }
+        )
+        data = CartesianTspData(df)
+
+        # Act
+        graph = data.to_graph()
+
+        # Assert
+        node_a = graph.nodes["NodeA"]
+        assert node_a["pos"] == (
+            10.5,
+            30.2,
+        ), f"Expected pos=(10.5, 30.2), got {node_a['pos']}"
+        assert node_a["name"] == "NodeA", f"Expected name='NodeA', got {node_a['name']}"
+        assert (
+            node_a["node_type"] == "startend"
+        ), f"Expected node_type='startend', got {node_a['node_type']}"
+
+        node_b = graph.nodes["NodeB"]
+        assert node_b["pos"] == (
+            20.7,
+            40.8,
+        ), f"Expected pos=(20.7, 40.8), got {node_b['pos']}"
+        assert node_b["name"] == "NodeB", f"Expected name='NodeB', got {node_b['name']}"
+        assert (
+            node_b["node_type"] == "permanent"
+        ), f"Expected node_type='permanent', got {node_b['node_type']}"
+
+    def test_to_graph_empty_data(self) -> None:
+        # Arrange
+        df = pd.DataFrame({"name": [], "node_type": [], "x": [], "y": []})
+        df = df.astype(
+            {"name": "object", "node_type": "object", "x": "float64", "y": "float64"}
+        )
+        data = CartesianTspData(df)
+
+        # Act
+        graph = data.to_graph()
+
+        # Assert
+        assert len(graph.nodes) == 0, f"Expected 0 nodes, got {len(graph.nodes)}"
+        assert len(graph.edges) == 0, f"Expected 0 edges, got {len(graph.edges)}"
+
+    def test_to_graph_different_node_types(self) -> None:
+        # Arrange
+        df = pd.DataFrame(
+            {
+                "name": ["Start", "End", "Perm1", "Perm2"],
+                "node_type": ["start", "end", "permanent", "permanent"],
+                "x": [0.0, 1.0, 3.0, 4.0],
+                "y": [0.0, 1.0, 3.0, 4.0],
+            }
+        )
+        data = CartesianTspData(df)
+
+        # Act
+        graph = data.to_graph()
+
+        # Assert
+        expected_nodes = {"Start", "End", "Perm1", "Perm2"}
+        actual_nodes = set(graph.nodes())
+        assert (
+            actual_nodes == expected_nodes
+        ), f"Expected {expected_nodes}, got {actual_nodes}"
+
+        assert graph.nodes["Start"]["node_type"] == "start"
+        assert graph.nodes["End"]["node_type"] == "end"
+        assert graph.nodes["Perm1"]["node_type"] == "permanent"
+        assert graph.nodes["Perm2"]["node_type"] == "permanent"

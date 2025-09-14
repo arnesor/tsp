@@ -71,6 +71,7 @@ class GeographicNodeModel(pa.DataFrameModel):
         coerce = True
 
     @pa.dataframe_check
+    @classmethod
     def _has_valid_node_configuration(cls, df: DataFrame[GeographicNodeModel]) -> bool:
         """Check that the dataframe has a valid node configuration.
 
@@ -97,6 +98,7 @@ class CartesianNodeModel(pa.DataFrameModel):
         coerce = True
 
     @pa.dataframe_check
+    @classmethod
     def _has_valid_node_configuration(cls, df: DataFrame[CartesianNodeModel]) -> bool:
         """Check that the dataframe has a valid node configuration.
 
