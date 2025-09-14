@@ -53,7 +53,7 @@ class Solver:
 
         self.model = model
         self.solver_name = solver_name
-        self.solver = self._create_solver()
+        self.solver_handle = self._create_solver()
         self.result: Results | None = None
 
     def _create_solver(self) -> SolverBase:
@@ -69,7 +69,7 @@ class Solver:
         Returns:
             True if the solver is available, False otherwise.
         """
-        return bool(self.solver.available())
+        return bool(self.solver_handle.available())
 
     def get_solver_info(self) -> SolverInfo:
         """Get solver information including name, availability, and version.
@@ -79,13 +79,13 @@ class Solver:
         """
         solver_available = self.is_solver_available()
         info: SolverInfo = {
-            "name": self.solver.name,
+            "name": self.solver_handle.name,
             "available": solver_available,
             "pyomo_version": pyomo.version.__version__,
         }
 
         if solver_available:
-            info["version"] = self.solver.version()
+            info["version"] = self.solver_handle.version()
 
         return info
 
@@ -116,7 +116,7 @@ class Solver:
 
         # Solve the model with timing
         start_time = time.perf_counter()
-        self.result = self.solver.solve(self.model)
+        self.result = self.solver_handle.solve(self.model)
         wall_time = time.perf_counter() - start_time
 
         # Extract results

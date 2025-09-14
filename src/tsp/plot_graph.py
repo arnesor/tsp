@@ -99,7 +99,7 @@ def plot(graph: nx.Graph, title: str | None = None, file: Path | None = None) ->
         y=node_y,
         mode="markers+text",
         text=display_texts,
-        marker=dict(color=node_colors),
+        marker={"color": node_colors},
         textposition="top center",
         hoverinfo="text",
         hovertext=hover_texts,
@@ -125,12 +125,12 @@ def plot(graph: nx.Graph, title: str | None = None, file: Path | None = None) ->
     }
 
     # Prepare layout and include title only if provided
-    layout_kwargs: dict[str, Any] = dict(
-        showlegend=False,
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        autosize=True,
-    )
+    layout_kwargs: dict[str, Any] = {
+        "showlegend": False,
+        "xaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
+        "yaxis": {"showgrid": False, "zeroline": False, "showticklabels": False},
+        "autosize": True,
+    }
     if title is not None:
         layout_kwargs["title"] = title
 
@@ -138,4 +138,8 @@ def plot(graph: nx.Graph, title: str | None = None, file: Path | None = None) ->
         data=[node_trace, edge_trace],
         layout=go.Layout(**layout_kwargs),
     )
+
+    if file is not None:
+        fig.write_html(file)
+
     fig.show(config=config)
