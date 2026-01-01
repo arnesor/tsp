@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Get uv version from constraints
         id: uv-version
@@ -43,7 +43,7 @@ jobs:
           echo "version=$UV_VERSION" >> $env:GITHUB_OUTPUT
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           version: ${{ steps.uv-version.outputs.version }}
@@ -66,7 +66,7 @@ jobs:
           subprocess.run(cmd, shell=True)
 
       - name: Restore pre-commit cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: matrix.session == 'pre-commit'
         with:
           path: ~/.cache/pre-commit
@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload coverage data
         if: always() && matrix.session == 'tests'
-        uses: "actions/upload-artifact@v4"
+        uses: "actions/upload-artifact@v6"
         with:
           name: coverage-data-${{ matrix.os }}-${{ matrix.python }}
           path: ".coverage.*"
@@ -102,7 +102,7 @@ jobs:
     needs: tests
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -114,14 +114,14 @@ jobs:
           echo "version=$UV_VERSION" >> $env:GITHUB_OUTPUT
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           version: ${{ steps.uv-version.outputs.version }}
           python-version: "3.11"
 
       - name: Download coverage data
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           pattern: coverage-data-*
           merge-multiple: true
@@ -147,4 +147,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         # No need to run SonarCloud analysis if dependabot update or token not defined
         if: env.SONAR_TOKEN != '' && (github.actor != 'dependabot[bot]')
-        uses: SonarSource/sonarqube-scan-action@v5.3.1
+        uses: SonarSource/sonarqube-scan-action@v7.0.0
